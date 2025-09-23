@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>8.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <Configurations>Debug;Release;IntegrationTests</Configurations>
+  </PropertyGroup>
+  <PropertyGroup>
+    <Authors>TonyHUk</Authors>
+    <Description>Build target for creating a nuget readme from a readme with relative links hosted on Github.</Description>
+    <Copyright>Copyright © 2025 Tony Hallett</Copyright>
+    <RepositoryUrl>https://github.com/tonyhallett/NugetReadmeGithubRelativeToRaw.git</RepositoryUrl>
+    <PackageTags>readme;Nuget;Github;target;task;relative;links;images</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/tonyhallett/NugetReadmeGithubRelativeToRaw</PackageProjectUrl>
+    <Title>Nuget PackageReadmeFile generator MsBuild target from readme with relative urls RepositoryUrl on gitgub.</Title>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <IsPackable>True</IsPackable>
+    <IncludeBuildOutput>true</IncludeBuildOutput>
+    <BuildOutputTargetFolder>build</BuildOutputTargetFolder>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+  </PropertyGroup>
+  <ItemGroup>
+      <!-- forcing the .nupkg to be rebuilt whenever targets changed -->
+      <EmbeddedResource Include="build/NugetReadmeGithubRelativeToRaw.targets" Pack="true" PackagePath="build" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Build.Framework" Version="17.14.8" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.14.8" />
+  </ItemGroup>
+</Project>

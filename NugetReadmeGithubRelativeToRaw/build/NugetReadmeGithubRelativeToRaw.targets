@@ -1,0 +1,50 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+      <UsingTask TaskName="ReadmeRewriterTask"
+             AssemblyFile="$(MSBuildThisFileDirectory)netstandard2.0\NugetReadmeGithubRelativeToRaw.dll" />
+
+     <!-- 1. Always define a dummy target to anchor things if BeforePack is not defined -->
+    <Target Name="BeforePackHook_NugetReadmeGithubRelativeToRaw" />
+
+    <!-- 2. If BeforePack is not defined, point it to BeforePackHook_NugetReadmeGithubRelativeToRaw -->
+    <PropertyGroup>
+      <BeforePack Condition="'$(BeforePack)' == ''">BeforePackHook_NugetReadmeGithubRelativeToRaw</BeforePack>
+    </PropertyGroup>
+
+    <!-- or instead _GetPackageFiles -->
+    <Target Name="ReadmeRewrite_ForPack"
+          BeforeTargets="$(BeforePack)"
+          Condition="'$(IsPackable)' != 'false'">
+
+    <!-- Require the caller to set PackageReadmeFile (relative to project directory) -->
+    <Error Condition="'$(PackageReadmeFile)' == ''"
+           Text="ReadmeRewrite: you must set &lt;PackageReadmeFile&gt; in the project (path RELATIVE to the project directory, e.g. README.nuget.md)." />
+
+    <Error Condition="'$(RepositoryUrl)' == ''"
+           Text="ReadmeRewrite: you must set &lt;RepositoryUrl&gt; in the project." />
+
+    <!-- Resolve defaults (BaseReadme defaults to README.md if not supplied) -->
+    <PropertyGroup>
+      <_BaseReadmeRelative Condition="'$(BaseReadme)' == ''">README.md</_BaseReadmeRelative>
+      <_BaseReadmeRelative Condition="'$(BaseReadme)' != ''">$(BaseReadme)</_BaseReadmeRelative>
+
+      <!-- absolute paths used for IO by the task -->
+      <_BaseReadmeAbsolute>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(_BaseReadmeRelative)'))</_BaseReadmeAbsolute>
+      <_OutputReadmeAbsolute>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(PackageReadmeFile)'))</_OutputReadmeAbsolute>
+
+      <!-- default branch -->
+      <_RepoBranch Condition="'$(RepositoryBranch)' == ''">master</_RepoBranch>
+      <_RepoBranch Condition="'$(RepositoryBranch)' != ''">$(RepositoryBranch)</_RepoBranch>
+    </PropertyGroup>
+
+    <!-- Run the rewrite task -->
+    <ReadmeRewriterTask
+        BaseReadme="$(_BaseReadmeAbsolute)"
+        OutputReadme="$(_OutputReadmeAbsolute)"
+        RepositoryUrl="$(RepositoryUrl)"
+        RepositoryBranch="$(_RepoBranch)" />
+
+    <ItemGroup>
+        <None Include="$(PackageReadmeFile)" Pack="true" PackagePath=""/>
+    </ItemGroup>
+  </Target>
+</Project>
