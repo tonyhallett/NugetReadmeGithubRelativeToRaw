@@ -6,7 +6,7 @@ namespace IntegrationTests
 {
     public class NugetReadmeGithubRelativeToRaw_Tests
     {
-        private NugetBuildTargetsTestSetup _nugetBuildTargetsTestSetup = new NugetBuildTargetsTestSetup();
+        private readonly NugetBuildTargetsTestSetup _nugetBuildTargetsTestSetup = new NugetBuildTargetsTestSetup();
         private const string NugetReadmeGithubRelativeToRaw = "NugetReadmeGithubRelativeToRaw";
 
         [OneTimeTearDown]

@@ -14,7 +14,7 @@
     <PackageTags>readme;Nuget;Github;target;task;relative;links;images</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/tonyhallett/NugetReadmeGithubRelativeToRaw</PackageProjectUrl>
-    <Title>Nuget PackageReadmeFile generator MsBuild target from readme with relative urls RepositoryUrl on gitgub.</Title>
+    <Title>Nuget ReadMe from GitHub Build Target</Title>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <IsPackable>True</IsPackable>
     <IncludeBuildOutput>true</IncludeBuildOutput>
