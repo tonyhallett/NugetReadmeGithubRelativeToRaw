@@ -1,23 +1,18 @@
 using System.IO.Compression;
 using System.Reflection;
+using NugetBuildTargetsIntegrationTesting;
 
 namespace IntegrationTests
 {
-    public class Tests
+    public class NugetReadmeGithubRelativeToRaw_Tests
     {
-        private NugetTargetPackageTestHelper _nugetTargetPackageTestHelper = new NugetTargetPackageTestHelper();
+        private NugetBuildTargetsTestSetup _nugetBuildTargetsTestSetup = new NugetBuildTargetsTestSetup();
         private const string NugetReadmeGithubRelativeToRaw = "NugetReadmeGithubRelativeToRaw";
 
-        [SetUp]
-        public void Setup()
-        {
-            _nugetTargetPackageTestHelper = new NugetTargetPackageTestHelper();
-        }
-
-        [TearDown]
+        [OneTimeTearDown]
         public void TearDown()
         {
-            _nugetTargetPackageTestHelper.TearDown();
+            _nugetBuildTargetsTestSetup.TearDown();
         }
 
         [Test]
@@ -50,7 +45,7 @@ After
 ";
 
             var nuPkgPath = GetNuPkgPath();
-            _nugetTargetPackageTestHelper.Setup(
+            _nugetBuildTargetsTestSetup.Setup(
                 projectWithReadMe,
                 nuPkgPath,
                 (projectPath) =>
