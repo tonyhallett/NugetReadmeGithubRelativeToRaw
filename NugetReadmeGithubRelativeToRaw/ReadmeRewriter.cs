@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace NugetReadmeGithubRelativeToRaw
 {
-    public class ReadmeRewriter
+    internal class ReadmeRewriter
     {
         public string? Rewrite(string readme, string githubRepoUrl, string? repoBranch)
         {

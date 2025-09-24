@@ -1,6 +1,6 @@
 ﻿# Description
 
-An [MsBuild custom target](https://duckduckgo.com) for NuGet packages that converts relative GitHub URLs in the README file to raw URLs.
+An [MsBuild custom target](https://learn.microsoft.com/en-us/nuget/concepts/msbuild-props-and-targets) for NuGet packages that converts relative GitHub URLs in the README file to raw URLs.
 
 # MSBuild Properties
 
