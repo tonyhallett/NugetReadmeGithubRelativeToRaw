@@ -95,13 +95,14 @@ namespace UnitTests
             Assert.That(rewrittenReadMe, Is.EqualTo(expectedReadme));
         }
 
-        [TestCase(nameof(RewriteTagsOptions.All), true)]
-        [TestCase(nameof(RewriteTagsOptions.RewriteImgTagsForSupportedDomains), true)]
-        [TestCase(nameof(RewriteTagsOptions.None), false)]
-        public void Should_Rewrite_Img_When_RewriteTagsOptions_RewriteImgTagsForSupportedDomains(string rewriteTagsOptions, bool expectsRewrites)
+        [TestCase(nameof(RewriteTagsOptions.All), true, true)]
+        [TestCase(nameof(RewriteTagsOptions.RewriteImgTagsForSupportedDomains), true, false)]
+        [TestCase(nameof(RewriteTagsOptions.None), false, false)]
+        public void Should_Rewrite_Img_When_RewriteTagsOptions_RewriteImgTagsForSupportedDomains(string rewriteTagsOptions, bool expectsRewrites, bool lowercaseTag)
         {
             var repoUrl = CreateRepositoryUrl("username", "reponame");
-            var readmeContent = @"<img alt=""alttext"" src=""https://github.com/user/repo/actions/workflows/workflowname.yaml/badge.svg"" />";
+            var imgTag = lowercaseTag ? "img" : "IMG";
+            var readmeContent = @$"<{imgTag} alt=""alttext"" src=""https://github.com/user/repo/actions/workflows/workflowname.yaml/badge.svg"" />";
 
             var result =  _readmeRewriter.Rewrite(readmeContent, repoUrl, "main", ParseRewriteTagsOptions(rewriteTagsOptions))!;
 
