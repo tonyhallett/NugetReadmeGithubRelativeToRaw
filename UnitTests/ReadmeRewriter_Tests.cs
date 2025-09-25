@@ -63,15 +63,68 @@ namespace UnitTests
             }
         }
 
+        [Test]
         public void Should_Trust_Github_Badge_Urls()
         {
             var workflowBadgeMarkdown = @"
 [![Workflow name](https://github.com/user/repo/actions/workflows/workflowname.yaml/badge.svg)](https://github.com/user/repo/actions/workflows/workflowname.yaml)
 ";
-            Assert.That(NugetTrustedImageDomains.Instance.IsImageDomainTrusted("github.com"), Is.False);
+            Assert.Multiple(() =>
+            {
+                Assert.That(NugetTrustedImageDomains.Instance.IsImageDomainTrusted("github.com"), Is.False);
 
-            Assert.That(RewriteUsernameReponame(workflowBadgeMarkdown).UnsupportedImageDomains, Is.Empty);
+                Assert.That(RewriteUsernameReponame(workflowBadgeMarkdown).UnsupportedImageDomains, Is.Empty);
+            });
         }
+
+        [Test]
+        public void Should_Rewrite_Reference_Links()
+        {
+            var readmeContent = @"
+![alt][label]
+
+[label]: image.png
+";
+            var rewrittenReadMe = RewriteUsernameReponame(readmeContent).RewrittenReadme;
+
+            var expectedReadme = @"
+![alt][label]
+
+[label]: https://raw.githubusercontent.com/username/reponame/main/image.png
+";
+            Assert.That(rewrittenReadMe, Is.EqualTo(expectedReadme));
+        }
+
+        [TestCase(nameof(RewriteTagsOptions.All), true)]
+        [TestCase(nameof(RewriteTagsOptions.RewriteImgTagsForSupportedDomains), true)]
+        [TestCase(nameof(RewriteTagsOptions.None), false)]
+        public void Should_Rewrite_Img_When_RewriteTagsOptions_RewriteImgTagsForSupportedDomains(string rewriteTagsOptions, bool expectsRewrites)
+        {
+            var repoUrl = CreateRepositoryUrl("username", "reponame");
+            var readmeContent = @"<img alt=""alttext"" src=""https://github.com/user/repo/actions/workflows/workflowname.yaml/badge.svg"" />";
+
+            var result =  _readmeRewriter.Rewrite(readmeContent, repoUrl, "main", ParseRewriteTagsOptions(rewriteTagsOptions))!;
+
+            var expectedRewrittenReadme = @"![alttext](https://github.com/user/repo/actions/workflows/workflowname.yaml/badge.svg)";
+            var expectedReadme = expectsRewrites ? expectedRewrittenReadme : readmeContent;
+            Assert.That(expectedReadme, Is.EqualTo(result.RewrittenReadme));
+        }
+
+        [TestCase(nameof(RewriteTagsOptions.All), true)]
+        [TestCase(nameof(RewriteTagsOptions.RewriteBrTags), true)]
+        [TestCase(nameof(RewriteTagsOptions.None), false)]
+        public void Should_Rewrite_Br_When_RewriteTagsOptions_RewriteBrTags(string rewriteTagsOptions, bool expectsRewrites)
+        {
+            var repoUrl = CreateRepositoryUrl("username", "reponame");
+            var readmeContent = @"Line1<br/>";
+            var result = _readmeRewriter.Rewrite(readmeContent, repoUrl, "main", ParseRewriteTagsOptions(rewriteTagsOptions))!;
+
+            var expectedRewrittenReadme = "Line1\\";
+            var expectedReadme = expectsRewrites ? expectedRewrittenReadme : readmeContent;
+            Assert.That(result.RewrittenReadme, Is.EqualTo(expectedReadme));
+        }
+
+        private RewriteTagsOptions ParseRewriteTagsOptions(string rewriteTagsOptions) => (RewriteTagsOptions)Enum.Parse(typeof(RewriteTagsOptions), rewriteTagsOptions);
 
         private ReadmeRewriterResult RewriteUsernameReponame(string readmeContent, string branch = "main")
         {

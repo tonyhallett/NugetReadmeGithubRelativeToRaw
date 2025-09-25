@@ -1,45 +1,42 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
 
 namespace NugetReadmeGithubRelativeToRaw
 {
-    internal class ReadmeRewriterResult
-    {
-        public ReadmeRewriterResult(string rewrittenReadme, IEnumerable<string> unsupportedImageDomains)
-        {
-            RewrittenReadme = rewrittenReadme;
-            UnsupportedImageDomains = new List<string>(unsupportedImageDomains);
-        }
-
-        public string RewrittenReadme { get; }
-
-        public IReadOnlyList<string> UnsupportedImageDomains { get; }
-    }
-
-    [Flags]
-    internal enum RewriteTagsOptions
-    {
-        RewriteImgTagsForSupportedDomains = 1,
-        RewriteATags = 2,
-        RewriteBrTags = 3,
-        All = RewriteImgTagsForSupportedDomains | RewriteATags | RewriteBrTags
-    }
-
     internal class ReadmeRewriter
     {
-        private readonly INugetImageDomainValidator nugetImageDomainValidator;
+        private readonly IRewritableMarkdownElementsProvider rewritableMarkdownElementsProvider;
+        private readonly IReadmeReplacer readmeReplacer;
+        private readonly IReadmeMarkdownElementsProcessor readmeMarkdownElementsProcessor;
 
-        public ReadmeRewriter(INugetImageDomainValidator nugetImageDomainValidator)
+        internal ReadmeRewriter(
+            IRewritableMarkdownElementsProvider rewritableMarkdownElementsProvider,
+            IReadmeReplacer readmeReplacer,
+            IReadmeMarkdownElementsProcessor readmeMarkdownElementsProcessor
+            )
         {
-            this.nugetImageDomainValidator = nugetImageDomainValidator;
+            this.rewritableMarkdownElementsProvider = rewritableMarkdownElementsProvider;
+            this.readmeReplacer = readmeReplacer;
+            this.readmeMarkdownElementsProcessor = readmeMarkdownElementsProcessor;
         }
 
-        public ReadmeRewriter() : this(new NugetImageDomainValidator(NugetTrustedImageDomains.Instance))
+        public ReadmeRewriter() : this(
+            new RewritableMarkdownElementsProvider(),
+            new ReadmeReplacer(),
+            new ReadmeMarkdownElementsProcessor(
+                new NugetImageDomainValidator(NugetTrustedImageDomains.Instance),
+                new GitHubUrlHelper()
+                )
+            )
         {
         }
 
         public ReadmeRewriterResult? Rewrite(string readme, string githubRepoUrl, string? repoBranch, RewriteTagsOptions  rewriteTagsOptions = RewriteTagsOptions.All)
+        {
+            string? rawUrl = GetRawUrl(githubRepoUrl, repoBranch);
+            return rawUrl == null ? null : Rewrite(readme, rawUrl, rewriteTagsOptions);
+        }
+
+        private string? GetRawUrl(string githubRepoUrl, string? repoBranch)
         {
             repoBranch = repoBranch ?? "master";
             string? rawUrl = null;
@@ -60,24 +57,24 @@ namespace NugetReadmeGithubRelativeToRaw
                 }
             }
 
-            if (rawUrl == null)
-            {
-                return null;
-            }
-
-            
-
-            return Rewrite(readme, rawUrl, rewriteTagsOptions);
+            return rawUrl;
         }
 
+        
         private ReadmeRewriterResult Rewrite(string readme,string rawUrl, RewriteTagsOptions rewriteTagsOptions)
         {
-            var tempRegexSolution =  Regex.Replace(
-                readme,
-                @"(!?\[[^\]]*\]\()((?!https?:\/\/)[^)]+)(\))",
-                m => $"{m.Groups[1].Value}{rawUrl}/{m.Groups[2].Value.TrimStart('/')}{m.Groups[3].Value}",
-                RegexOptions.Compiled);
-            return new ReadmeRewriterResult(tempRegexSolution, new string[0]);
+            var relevantMarkdownElements = rewritableMarkdownElementsProvider.GetRelevantMarkdownElementsWithSourceLocation(readme, rewriteTagsOptions == RewriteTagsOptions.None);
+            
+            var markdownElementsProcessResult = readmeMarkdownElementsProcessor.Process(relevantMarkdownElements, rawUrl, rewriteTagsOptions);
+            
+            var rewrittenReadme = readmeReplacer.Replace(readme, markdownElementsProcessResult.SourceReplacements);
+            return new ReadmeRewriterResult(rewrittenReadme, markdownElementsProcessResult.UnsupportedImageDomains);
         }
+
+
+
+
+
+
     }
 }

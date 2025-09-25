@@ -6,7 +6,7 @@ namespace NugetReadmeGithubRelativeToRaw
     internal class NugetTrustedImageDomains : INugetTrustedImageDomains
     {
         // https://github.com/NuGet/NuGetGallery/blob/2e04a148fa40d004f40cd648c83b35c4b264cfd9/src/NuGetGallery/App_Data/Files/Content/Trusted-Image-Domains.json
-        private static string[] trustedImageDomainList = new string[]
+        private static readonly string[] s_trustedImageDomainList = new string[]
         {
             "api.codacy.com",
             "app.codacy.com",
@@ -45,7 +45,7 @@ namespace NugetReadmeGithubRelativeToRaw
             "user-images.githubusercontent.com",
             "camo.githubusercontent.com"
         };
-        private static readonly HashSet<string> s_trustedImageDomains = new HashSet<string>(trustedImageDomainList, StringComparer.OrdinalIgnoreCase);
+        private static readonly HashSet<string> s_trustedImageDomains = new HashSet<string>(s_trustedImageDomainList, StringComparer.OrdinalIgnoreCase);
 
         private NugetTrustedImageDomains() { }
 
