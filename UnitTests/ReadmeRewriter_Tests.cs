@@ -12,26 +12,72 @@ namespace UnitTests
         [TestCase("dir/fileName.ext","username","reponame","main")]
         [TestCase("dir2/fileName2.ext", "username2", "reponame2", "master")]
         [TestCase("dir/fileName.ext", "username", "reponame", null)] // should default to master
-        public void Should_Replace(string relativePath, string username, string reponame,string? repoBranch)
+        public void Should_Replace_Relative_Markdown_Image(string relativePath, string username, string reponame,string? repoBranch)
         {
             var readmeContent = CreateMarkdownImage(relativePath);
             var repoUrl = CreateRepositoryUrl(username, reponame);
             repoBranch = repoBranch ?? "master";
             var expectedRedmeRewritten = CreateMarkdownImage($"https://raw.githubusercontent.com/{username}/{reponame}/{repoBranch}/{relativePath}");
-            var readmeRewritten = _readmeRewriter.Rewrite(readmeContent, repoUrl, repoBranch);
+            var readmeRewritten = _readmeRewriter.Rewrite(readmeContent, repoUrl, repoBranch)!.RewrittenReadme;
             Assert.That(readmeRewritten, Is.EqualTo(expectedRedmeRewritten));
         }
 
         [Test]
-        public void Should_Not_Replace_When_Absolute_Url()
+        public void Should_Not_Replace_Relative_Markdown_Image_In_Code_Block()
         {
-            var absolutePath = "https://example.com/image.png";
-            var readmeContent = CreateMarkdownImage(absolutePath);
-            var repoUrl = CreateRepositoryUrl("username", "reponame");
+            var codeBlock = @$"
+    ```html
+    ${CreateMarkdownImage("dir/file.png")}
+    ```
+";
+            var readmeRewritten = RewriteUsernameReponame(codeBlock).RewrittenReadme;
 
-            var readmeRewritten = _readmeRewriter.Rewrite(readmeContent, repoUrl, "main");
+            Assert.That(readmeRewritten, Is.EqualTo(codeBlock));
+        }
+
+        [Test]
+        public void Should_Not_Replace_Absolute_Markdown_Image()
+        {
+            var readmeContent = CreateMarkdownImage("https://example.com/image.png");
+
+            var readmeRewritten = RewriteUsernameReponame(readmeContent).RewrittenReadme;
             
             Assert.That(readmeRewritten, Is.EqualTo(readmeContent));
+        }
+
+        [TestCase("https://raw.githubusercontent.com/me/repo/refs/heads/master/dir/file.gif", false)]
+        [TestCase("https://untrusted/file.gif", true)]
+        public void Should_Report_On_Untrusted_Image_Domains(string imageUrl, bool expectedUntrusted)
+        {
+            var readmeContent = CreateMarkdownImage(imageUrl);
+
+            var unsupportedImageDomains = RewriteUsernameReponame(readmeContent).UnsupportedImageDomains;
+            if(expectedUntrusted)
+            {
+                Assert.That(unsupportedImageDomains, Has.Count.EqualTo(1));
+                Assert.That(unsupportedImageDomains, Does.Contain("untrusted"));
+            }
+            else
+            {
+                Assert.That(unsupportedImageDomains, Is.Empty);
+            }
+        }
+
+        public void Should_Trust_Github_Badge_Urls()
+        {
+            var workflowBadgeMarkdown = @"
+[![Workflow name](https://github.com/user/repo/actions/workflows/workflowname.yaml/badge.svg)](https://github.com/user/repo/actions/workflows/workflowname.yaml)
+";
+            Assert.That(NugetTrustedImageDomains.Instance.IsImageDomainTrusted("github.com"), Is.False);
+
+            Assert.That(RewriteUsernameReponame(workflowBadgeMarkdown).UnsupportedImageDomains, Is.Empty);
+        }
+
+        private ReadmeRewriterResult RewriteUsernameReponame(string readmeContent, string branch = "main")
+        {
+            var repoUrl = CreateRepositoryUrl("username", "reponame");
+
+            return _readmeRewriter.Rewrite(readmeContent, repoUrl, "main")!;
         }
 
         private static string CreateMarkdownImage(string path) => $"![description]({path})";

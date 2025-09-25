@@ -1,11 +1,45 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 namespace NugetReadmeGithubRelativeToRaw
 {
+    internal class ReadmeRewriterResult
+    {
+        public ReadmeRewriterResult(string rewrittenReadme, IEnumerable<string> unsupportedImageDomains)
+        {
+            RewrittenReadme = rewrittenReadme;
+            UnsupportedImageDomains = new List<string>(unsupportedImageDomains);
+        }
+
+        public string RewrittenReadme { get; }
+
+        public IReadOnlyList<string> UnsupportedImageDomains { get; }
+    }
+
+    [Flags]
+    internal enum RewriteTagsOptions
+    {
+        RewriteImgTagsForSupportedDomains = 1,
+        RewriteATags = 2,
+        RewriteBrTags = 3,
+        All = RewriteImgTagsForSupportedDomains | RewriteATags | RewriteBrTags
+    }
+
     internal class ReadmeRewriter
     {
-        public string? Rewrite(string readme, string githubRepoUrl, string? repoBranch)
+        private readonly INugetImageDomainValidator nugetImageDomainValidator;
+
+        public ReadmeRewriter(INugetImageDomainValidator nugetImageDomainValidator)
+        {
+            this.nugetImageDomainValidator = nugetImageDomainValidator;
+        }
+
+        public ReadmeRewriter() : this(new NugetImageDomainValidator(NugetTrustedImageDomains.Instance))
+        {
+        }
+
+        public ReadmeRewriterResult? Rewrite(string readme, string githubRepoUrl, string? repoBranch, RewriteTagsOptions  rewriteTagsOptions = RewriteTagsOptions.All)
         {
             repoBranch = repoBranch ?? "master";
             string? rawUrl = null;
@@ -31,11 +65,19 @@ namespace NugetReadmeGithubRelativeToRaw
                 return null;
             }
 
-            return Regex.Replace(
+            
+
+            return Rewrite(readme, rawUrl, rewriteTagsOptions);
+        }
+
+        private ReadmeRewriterResult Rewrite(string readme,string rawUrl, RewriteTagsOptions rewriteTagsOptions)
+        {
+            var tempRegexSolution =  Regex.Replace(
                 readme,
                 @"(!?\[[^\]]*\]\()((?!https?:\/\/)[^)]+)(\))",
                 m => $"{m.Groups[1].Value}{rawUrl}/{m.Groups[2].Value.TrimStart('/')}{m.Groups[3].Value}",
                 RegexOptions.Compiled);
+            return new ReadmeRewriterResult(tempRegexSolution, new string[0]);
         }
     }
 }

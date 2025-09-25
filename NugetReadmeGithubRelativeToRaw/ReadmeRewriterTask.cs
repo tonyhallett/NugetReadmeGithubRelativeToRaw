@@ -31,14 +31,19 @@ namespace NugetReadmeGithubRelativeToRaw
             }
 
             var readMeContents = File.ReadAllText(BaseReadme);
-            var packageReadMe = new ReadmeRewriter().Rewrite(readMeContents, RepositoryUrl, RepositoryBranch);
-            if (packageReadMe == null)
+            var readmeRewriterResult = new ReadmeRewriter().Rewrite(readMeContents, RepositoryUrl, RepositoryBranch);
+            if (readmeRewriterResult == null)
             {
                 Log.LogError("Could not parse the RepositoryUrl: " + RepositoryUrl);
                 return false;
             }
 
-            File.WriteAllText(OutputReadme, packageReadMe);
+            foreach(var x in readmeRewriterResult.UnsupportedImageDomains)
+            {
+                Log.LogWarning("Unsupported image domain found in README: " + x);
+            }
+
+            File.WriteAllText(OutputReadme, readmeRewriterResult.RewrittenReadme);
             return true;
         }
     }
