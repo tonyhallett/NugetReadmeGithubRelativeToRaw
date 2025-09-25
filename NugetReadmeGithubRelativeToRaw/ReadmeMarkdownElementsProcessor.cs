@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using AngleSharp.Html.Dom;
+using System.Text.RegularExpressions;
 
 namespace NugetReadmeGithubRelativeToRaw
 {
@@ -30,11 +31,19 @@ namespace NugetReadmeGithubRelativeToRaw
         {
             foreach (var htmlInline in htmlInlines)
             {
-                if (htmlInline.Tag == "<br/>" && rewriteTagsOptions.HasFlag(RewriteTagsOptions.RewriteBrTags))
+                if (rewriteTagsOptions.HasFlag(RewriteTagsOptions.RewriteBrTags) && IsBrTag(htmlInline))
                 {
                     markdownElementsProcessResult.AddSourceReplacement(htmlInline.Span, "\\");
                 }
             }
+        }
+
+        private static bool IsBrTag(HtmlInline htmlInline)
+        {
+            var tag = htmlInline.Tag.Trim();
+
+            // Match <br>, <br/>, <br />, <br    />, etc.
+            return Regex.IsMatch(tag, @"^<br\s*/?>$", RegexOptions.IgnoreCase);
         }
 
         private void ProcessHtmlBlocks(

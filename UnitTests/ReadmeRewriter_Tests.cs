@@ -124,6 +124,19 @@ namespace UnitTests
             Assert.That(result.RewrittenReadme, Is.EqualTo(expectedReadme));
         }
 
+        [TestCase("<br>")]
+        [TestCase("<br />")]
+        [TestCase("<BR/>")]
+        public void Should_Rewrite_Br_Different_Formats(string br)
+        {
+            var repoUrl = CreateRepositoryUrl("username", "reponame");
+            var readmeContent = $"Line1{br}";
+            var result = _readmeRewriter.Rewrite(readmeContent, repoUrl, "main", RewriteTagsOptions.All)!;
+
+            var expectedReadme = "Line1\\";
+            Assert.That(result.RewrittenReadme, Is.EqualTo(expectedReadme));
+        }
+
         private RewriteTagsOptions ParseRewriteTagsOptions(string rewriteTagsOptions) => (RewriteTagsOptions)Enum.Parse(typeof(RewriteTagsOptions), rewriteTagsOptions);
 
         private ReadmeRewriterResult RewriteUsernameReponame(string readmeContent, string branch = "main")
