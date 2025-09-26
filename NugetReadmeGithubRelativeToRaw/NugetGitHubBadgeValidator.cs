@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
 namespace NugetReadmeGithubRelativeToRaw
 {
+    [ExcludeFromCodeCoverage]
     internal class NugetGitHubBadgeValidator : INugetGitHubBadgeValidator
     {
         private static readonly TimeSpan RegexTimeout = TimeSpan.FromMinutes(1);
