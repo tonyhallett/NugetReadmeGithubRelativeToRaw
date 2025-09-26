@@ -23,7 +23,7 @@ namespace NugetReadmeGithubRelativeToRaw
             new RewritableMarkdownElementsProvider(),
             new ReadmeReplacer(),
             new ReadmeMarkdownElementsProcessor(
-                new NugetImageDomainValidator(NugetTrustedImageDomains.Instance),
+                new NugetImageDomainValidator(NugetTrustedImageDomains.Instance, new NugetGitHubBadgeValidator()),
                 new GitHubUrlHelper(),
                 new HtmlFragmentParser()
                 )

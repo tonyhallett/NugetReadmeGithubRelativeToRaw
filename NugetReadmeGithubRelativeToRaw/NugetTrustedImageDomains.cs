@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace NugetReadmeGithubRelativeToRaw
 {
+    [ExcludeFromCodeCoverage]
     internal class NugetTrustedImageDomains : INugetTrustedImageDomains
     {
         // https://github.com/NuGet/NuGetGallery/blob/2e04a148fa40d004f40cd648c83b35c4b264cfd9/src/NuGetGallery/App_Data/Files/Content/Trusted-Image-Domains.json

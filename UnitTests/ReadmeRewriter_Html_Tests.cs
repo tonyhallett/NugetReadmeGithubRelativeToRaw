@@ -10,10 +10,24 @@ namespace UnitTests
         public void Should_Rewrite_Img_When_RewriteTagsOptions_RewriteImgTagsForSupportedDomains(string rewriteTagsOptions, bool expectsRewrites, bool lowercaseTag)
         {
             var readmeContent = CreateImage("alttext", "https://github.com/user/repo/actions/workflows/workflowname.yaml/badge.svg", lowercaseTag);
-            var result = RewriteUsernameReponameMainBranch(readmeContent, ParseRewriteTagsOptions(rewriteTagsOptions))!;
+            var result = RewriteUsernameReponameMainBranch(readmeContent, ParseRewriteTagsOptions(rewriteTagsOptions));
 
             var expectedRewrittenReadme = CreateMarkdownImage("https://github.com/user/repo/actions/workflows/workflowname.yaml/badge.svg", "alttext");
             var expectedReadme = expectsRewrites ? expectedRewrittenReadme : readmeContent;
+            Assert.Multiple(() =>
+            {
+                Assert.That(expectedReadme, Is.EqualTo(result.RewrittenReadme));
+                Assert.That(result.UnsupportedImageDomains, Is.Empty);
+            });
+        }
+
+        [Test]
+        public void Should_Rewrite_Relative_Img()
+        {
+            var readmeContent = CreateImage("alttext", "relative.png");
+            var result = RewriteUsernameReponameMainBranch(readmeContent);
+
+            var expectedReadme = CreateMarkdownImage("https://raw.githubusercontent.com/username/reponame/main/relative.png", "alttext");
             Assert.Multiple(() =>
             {
                 Assert.That(expectedReadme, Is.EqualTo(result.RewrittenReadme));
