@@ -12,7 +12,7 @@ namespace UnitTests
         [TestCase("dir/fileName.ext","username","reponame","main")]
         [TestCase("dir2/fileName2.ext", "username2", "reponame2", "master")]
         [TestCase("dir/fileName.ext", "username", "reponame", null)] // should default to master
-        public void Should_Replace_Relative_Markdown_Image(string relativePath, string username, string reponame,string? repoBranch)
+        public void Should_Rewrite_Relative_Markdown_Image(string relativePath, string username, string reponame,string? repoBranch)
         {
             var readmeContent = CreateMarkdownImage(relativePath);
             var repoUrl = CreateRepositoryUrl(username, reponame);
@@ -23,24 +23,24 @@ namespace UnitTests
         }
 
         [Test]
-        public void Should_Not_Replace_Relative_Markdown_Image_In_Code_Block()
+        public void Should_Not_Rewrite_Relative_Markdown_Image_In_Code_Block()
         {
             var codeBlock = @$"
     ```html
     ${CreateMarkdownImage("dir/file.png")}
     ```
 ";
-            var readmeRewritten = RewriteUsernameReponame(codeBlock).RewrittenReadme;
+            var readmeRewritten = RewriteUsernameReponameMainBranch(codeBlock).RewrittenReadme;
 
             Assert.That(readmeRewritten, Is.EqualTo(codeBlock));
         }
 
         [Test]
-        public void Should_Not_Replace_Absolute_Markdown_Image()
+        public void Should_Not_Rewrite_Absolute_Markdown_Image()
         {
             var readmeContent = CreateMarkdownImage("https://example.com/image.png");
 
-            var readmeRewritten = RewriteUsernameReponame(readmeContent).RewrittenReadme;
+            var readmeRewritten = RewriteUsernameReponameMainBranch(readmeContent).RewrittenReadme;
             
             Assert.That(readmeRewritten, Is.EqualTo(readmeContent));
         }
@@ -51,7 +51,7 @@ namespace UnitTests
         {
             var readmeContent = CreateMarkdownImage(imageUrl);
 
-            var unsupportedImageDomains = RewriteUsernameReponame(readmeContent).UnsupportedImageDomains;
+            var unsupportedImageDomains = RewriteUsernameReponameMainBranch(readmeContent).UnsupportedImageDomains;
             if(expectedUntrusted)
             {
                 Assert.That(unsupportedImageDomains, Has.Count.EqualTo(1));
@@ -73,7 +73,7 @@ namespace UnitTests
             {
                 Assert.That(NugetTrustedImageDomains.Instance.IsImageDomainTrusted("github.com"), Is.False);
 
-                Assert.That(RewriteUsernameReponame(workflowBadgeMarkdown).UnsupportedImageDomains, Is.Empty);
+                Assert.That(RewriteUsernameReponameMainBranch(workflowBadgeMarkdown).UnsupportedImageDomains, Is.Empty);
             });
         }
 
@@ -85,7 +85,7 @@ namespace UnitTests
 
 [label]: image.png
 ";
-            var rewrittenReadMe = RewriteUsernameReponame(readmeContent).RewrittenReadme;
+            var rewrittenReadMe = RewriteUsernameReponameMainBranch(readmeContent).RewrittenReadme;
 
             var expectedReadme = @"
 ![alt][label]
@@ -108,7 +108,27 @@ namespace UnitTests
 
             var expectedRewrittenReadme = @"![alttext](https://github.com/user/repo/actions/workflows/workflowname.yaml/badge.svg)";
             var expectedReadme = expectsRewrites ? expectedRewrittenReadme : readmeContent;
-            Assert.That(expectedReadme, Is.EqualTo(result.RewrittenReadme));
+            Assert.Multiple(() =>
+            {
+                Assert.That(expectedReadme, Is.EqualTo(result.RewrittenReadme));
+                Assert.That(result.UnsupportedImageDomains, Is.Empty);
+            });
+        }
+
+        [Test]
+        public void Should_Not_Rewrite_Img_For_Unsupported_Domains()
+        {
+            var repoUrl = CreateRepositoryUrl("username", "reponame");
+            var readmeContent = @$"<img alt=""alttext"" src=""https://unsupported.com/a.png"" />";
+
+            var result = _readmeRewriter.Rewrite(readmeContent, repoUrl, "main", RewriteTagsOptions.All)!;
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(readmeContent, Is.EqualTo(result.RewrittenReadme));
+                Assert.That(result.UnsupportedImageDomains, Has.Count.EqualTo(1));
+            });
+            Assert.That(result.UnsupportedImageDomains, Does.Contain("unsupported.com"));
         }
 
         [TestCase(nameof(RewriteTagsOptions.All), true)]
@@ -172,11 +192,11 @@ namespace UnitTests
 
         private static RewriteTagsOptions ParseRewriteTagsOptions(string rewriteTagsOptions) => (RewriteTagsOptions)Enum.Parse(typeof(RewriteTagsOptions), rewriteTagsOptions);
 
-        private ReadmeRewriterResult RewriteUsernameReponame(string readmeContent, string branch = "main")
+        private ReadmeRewriterResult RewriteUsernameReponameMainBranch(string readmeContent, RewriteTagsOptions rewriteTagsOptions = RewriteTagsOptions.All)
         {
             var repoUrl = CreateRepositoryUrl("username", "reponame");
 
-            return _readmeRewriter.Rewrite(readmeContent, repoUrl, "main")!;
+            return _readmeRewriter.Rewrite(readmeContent, repoUrl, "main",rewriteTagsOptions)!;
         }
 
         private static string CreateMarkdownImage(string path) => $"![description]({path})";
