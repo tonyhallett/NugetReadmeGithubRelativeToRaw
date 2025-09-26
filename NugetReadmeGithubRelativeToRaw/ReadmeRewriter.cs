@@ -24,7 +24,8 @@ namespace NugetReadmeGithubRelativeToRaw
             new ReadmeReplacer(),
             new ReadmeMarkdownElementsProcessor(
                 new NugetImageDomainValidator(NugetTrustedImageDomains.Instance),
-                new GitHubUrlHelper()
+                new GitHubUrlHelper(),
+                new HtmlFragmentParser()
                 )
             )
         {

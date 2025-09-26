@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using AngleSharp.Html.Dom;
-using System.Text.RegularExpressions;
 
 namespace NugetReadmeGithubRelativeToRaw
 {
@@ -11,11 +10,17 @@ namespace NugetReadmeGithubRelativeToRaw
     {
         private readonly INugetImageDomainValidator nugetImageDomainValidator;
         private readonly IGitHubUrlHelper gitHubUrlHelper;
+        private readonly IHtmlFragmentParser htmlFragmentParser;
 
-        public ReadmeMarkdownElementsProcessor(INugetImageDomainValidator nugetImageDomainValidator, IGitHubUrlHelper gitHubUrlHelper)
+        public ReadmeMarkdownElementsProcessor(
+            INugetImageDomainValidator nugetImageDomainValidator, 
+            IGitHubUrlHelper gitHubUrlHelper,
+            IHtmlFragmentParser htmlFragmentParser
+            )
         {
             this.nugetImageDomainValidator = nugetImageDomainValidator;
             this.gitHubUrlHelper = gitHubUrlHelper;
+            this.htmlFragmentParser = htmlFragmentParser;
         }
 
         public IMarkdownElementsProcessResult Process(RelevantMarkdownElements relevantMarkdownElements, string rawUrl, RewriteTagsOptions rewriteTagsOptions)
@@ -31,19 +36,31 @@ namespace NugetReadmeGithubRelativeToRaw
         {
             foreach (var htmlInline in htmlInlines)
             {
-                if (rewriteTagsOptions.HasFlag(RewriteTagsOptions.RewriteBrTags) && IsBrTag(htmlInline))
+                if (rewriteTagsOptions.HasFlag(RewriteTagsOptions.RewriteBrTags) && htmlInline.IsBrTag())
                 {
                     markdownElementsProcessResult.AddSourceReplacement(htmlInline.Span, "\\");
                 }
+                else if (rewriteTagsOptions.HasFlag(RewriteTagsOptions.RewriteATags) && HtmlInlineATag.TryCreate(htmlInline) is HtmlInlineATag htmlInlineATag)
+                {
+                    var anchorElement = htmlFragmentParser.Parse(htmlInlineATag.Text) as IHtmlAnchorElement;
+                    var href = anchorElement!.GetAttribute("href");
+                    if (href != null && HrefIsValid(href))
+                    {
+                        href = gitHubUrlHelper.GetAbsoluteOrGithubAbsoluteUrl(href, rawUrl);
+                        markdownElementsProcessResult.AddSourceReplacement(htmlInlineATag.Span, $"[{anchorElement!.TextContent}]({href})");
+                    }
+                }
             }
-        }
 
-        private static bool IsBrTag(HtmlInline htmlInline)
-        {
-            var tag = htmlInline.Tag.Trim();
-
-            // Match <br>, <br/>, <br />, <br    />, etc.
-            return Regex.IsMatch(tag, @"^<br\s*/?>$", RegexOptions.IgnoreCase);
+            bool HrefIsValid(string href)
+            {
+                href = href.Trim(); 
+                return !string.IsNullOrWhiteSpace(href)
+                    && !href.StartsWith("#", StringComparison.OrdinalIgnoreCase)
+                    && !href.StartsWith("javascript:", StringComparison.OrdinalIgnoreCase)
+                    && !href.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase)
+                    && !href.StartsWith("tel:", StringComparison.OrdinalIgnoreCase);
+            }
         }
 
         private void ProcessHtmlBlocks(
@@ -54,44 +71,25 @@ namespace NugetReadmeGithubRelativeToRaw
         {
             foreach (var htmlBlock in htmlBlocks)
             {
-                var root = HtmlBlockTransformer.TransformToDom(htmlBlock);
+                var root = htmlFragmentParser.Parse(htmlBlock);
 
                 switch (root.NodeName.ToLowerInvariant())
                 {
-                    case "a" when rewriteTagsOptions.HasFlag(RewriteTagsOptions.RewriteATags):
-                        var anchorElement = root as IHtmlAnchorElement;
-                        var href = anchorElement!.GetAttribute("href");
-                        var download = anchorElement!.GetAttribute("download");
-                        var innerText = root.TextContent ?? string.Empty;
-                        if (!string.IsNullOrWhiteSpace(href) && string.IsNullOrWhiteSpace(download))
+                    case "img" when rewriteTagsOptions.HasFlag(RewriteTagsOptions.RewriteImgTagsForSupportedDomains) && DefinedSrcAlt.TryGet((root as IHtmlImageElement)!) is DefinedSrcAlt srcAlt:
+                        var src = srcAlt.Src;
+                        if (gitHubUrlHelper.GetAbsoluteUri(src) is Uri absoluteUri){
+                            if (!nugetImageDomainValidator.IsTrustedImageDomain(absoluteUri.OriginalString))
+                            {
+                                markdownElementsProcessResult.AddUnsupportedImageDomain(absoluteUri.Host);
+                                break;
+                            }
+                        }else
                         {
-                            var md = $"[{innerText}]({href})";
-                            AddSourceReplacement(md);
+                            src = gitHubUrlHelper.GetGithubAbsoluteUrl(src, rawUrl)!;
                         }
+                        var imgTagReplacement = $"![{srcAlt.Alt}]({src})";
+                        AddSourceReplacement(imgTagReplacement);
                         break;
-
-                    case "img" when rewriteTagsOptions.HasFlag(RewriteTagsOptions.RewriteImgTagsForSupportedDomains):
-                        var imgElement = root as IHtmlImageElement;
-                        var src = imgElement!.GetAttribute("src");
-                        var alt = imgElement!.GetAttribute("alt") ?? string.Empty;
-                        if (!string.IsNullOrWhiteSpace(src) && !string.IsNullOrWhiteSpace(alt))
-                        {
-                            // todo relative to absolute
-                            // unsupported domains
-                            var md = $"![{alt}]({src})";
-                            AddSourceReplacement(md);
-                            //if (IsTrustedImage(src))
-                            //{
-                            //    var md = $"![{alt}]({src})";
-                            //    replacements.Add((offset, offset + htmlText.Length - 1, md));
-                            //}
-                            //else
-                            //{
-                            //    unsupportedDomains.Add(new Uri(src).Host);
-                            //}
-                        }
-                        break;
-                        // ignore other HTML
                 }
 
                 void AddSourceReplacement(string replacementText)

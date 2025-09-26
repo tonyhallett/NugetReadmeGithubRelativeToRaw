@@ -3,21 +3,23 @@ using AngleSharp.Html.Parser;
 using AngleSharp;
 using Markdig.Syntax;
 using AngleSharp.Dom;
-using Markdig.Syntax.Inlines;
 
 namespace NugetReadmeGithubRelativeToRaw
 {
-    internal static class HtmlBlockTransformer
+    internal class HtmlFragmentParser : IHtmlFragmentParser
     {
-        public static INode TransformToDom(HtmlBlock htmlBlock)
+        public INode Parse(HtmlBlock htmlBlock)
+        {
+            return Parse(htmlBlock.Lines.ToString());
+        }
+
+        public INode Parse(string fragment)
         {
             var context = BrowsingContext.New(Configuration.Default);
             var parser = context.GetService<IHtmlParser>();
             var document = context.OpenNewAsync().Result;
             var body = document.Body;
-
-            var htmlText = htmlBlock.Lines.ToString();
-            var root = parser!.ParseFragment(htmlText, body!).First();
+            var root = parser!.ParseFragment(fragment, body!).First();
             return root;
         }
     }

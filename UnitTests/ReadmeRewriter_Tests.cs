@@ -138,7 +138,39 @@ namespace UnitTests
             Assert.That(result.RewrittenReadme, Is.EqualTo(expectedReadme));
         }
 
-        private RewriteTagsOptions ParseRewriteTagsOptions(string rewriteTagsOptions) => (RewriteTagsOptions)Enum.Parse(typeof(RewriteTagsOptions), rewriteTagsOptions);
+        [TestCase(nameof(RewriteTagsOptions.All), true, true)]
+        [TestCase(nameof(RewriteTagsOptions.RewriteATags), true, false)]
+        [TestCase(nameof(RewriteTagsOptions.None), false, true)]
+        public void Should_Rewrite_A_Tag_When_RewriteTagsOptions_RewriteATags_Relative(string rewriteTagsOptions, bool expectsRewrites, bool lowercaseTag)
+        {
+            var repoUrl = CreateRepositoryUrl("username", "reponame");
+            var aTag = lowercaseTag ? "a" : "A";
+            var readmeContent = @$"<{aTag} href=""abc.html"">TextContent</{aTag}>";
+
+            var result = _readmeRewriter.Rewrite(readmeContent, repoUrl, "main", ParseRewriteTagsOptions(rewriteTagsOptions))!;
+
+            var expectedRewrittenReadme = @"[TextContent](https://raw.githubusercontent.com/username/reponame/main/abc.html)";
+            var expectedReadme = expectsRewrites ? expectedRewrittenReadme : readmeContent;
+            Assert.That(expectedReadme, Is.EqualTo(result.RewrittenReadme));
+        }
+
+        [Test]
+        public void Should_Rewrite_A_Tag_Absolute()
+        {
+            var repoUrl = CreateRepositoryUrl("username", "reponame");
+            var readmeContent = @$"<a href=""https://example.org/some-page"">Some page</a>";
+
+            var result = _readmeRewriter.Rewrite(readmeContent, repoUrl, "main", RewriteTagsOptions.All)!;
+
+            var expectedReadme = @"[Some page](https://example.org/some-page)";
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.RewrittenReadme, Is.EqualTo(expectedReadme));
+                Assert.That(result.UnsupportedImageDomains, Is.Empty);
+            });
+        }
+
+        private static RewriteTagsOptions ParseRewriteTagsOptions(string rewriteTagsOptions) => (RewriteTagsOptions)Enum.Parse(typeof(RewriteTagsOptions), rewriteTagsOptions);
 
         private ReadmeRewriterResult RewriteUsernameReponame(string readmeContent, string branch = "main")
         {

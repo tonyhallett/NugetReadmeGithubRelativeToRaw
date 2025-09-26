@@ -18,6 +18,16 @@ namespace NugetReadmeGithubRelativeToRaw
 
         }
 
+        public string GetAbsoluteOrGithubAbsoluteUrl(string url, string rawUrl)
+        {
+            if (IsAbsolute(url))
+            {
+                return url!;
+            }
+
+            return GetGithubAbsoluteUrl(url, rawUrl)!;
+        }
+
         public Uri? GetAbsoluteUri(string? url)
         {
             if (url == null)
@@ -33,7 +43,5 @@ namespace NugetReadmeGithubRelativeToRaw
         }
 
         private bool IsAbsolute(string? url) => GetAbsoluteUri(url) != null;
-
-
     }
 }
