@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using Microsoft.Build.Framework;
+using NugetReadmeGithubRelativeToRaw.Rewriter;
 
 namespace NugetReadmeGithubRelativeToRaw
 {

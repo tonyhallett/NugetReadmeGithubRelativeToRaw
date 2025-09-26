@@ -1,7 +1,7 @@
 ﻿using Markdig.Syntax.Inlines;
 using System.Text.RegularExpressions;
 
-namespace NugetReadmeGithubRelativeToRaw
+namespace NugetReadmeGithubRelativeToRaw.Rewriter
 {
     internal static class HtmlInlineExtensions
     {

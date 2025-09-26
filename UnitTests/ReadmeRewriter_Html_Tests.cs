@@ -1,4 +1,4 @@
-using NugetReadmeGithubRelativeToRaw;
+using NugetReadmeGithubRelativeToRaw.Rewriter;
 
 namespace UnitTests
 {

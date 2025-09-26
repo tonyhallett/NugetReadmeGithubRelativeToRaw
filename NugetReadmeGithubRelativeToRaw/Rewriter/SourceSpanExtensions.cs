@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using Markdig.Syntax;
 
-namespace NugetReadmeGithubRelativeToRaw
+namespace NugetReadmeGithubRelativeToRaw.Rewriter
 {
     internal static class SourceSpanExtensions
     {

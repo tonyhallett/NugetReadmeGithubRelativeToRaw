@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Markdig.Syntax;
 
-namespace NugetReadmeGithubRelativeToRaw
+namespace NugetReadmeGithubRelativeToRaw.Rewriter
 {
     internal class MarkdownElementsProcessResult : IMarkdownElementsProcessResult
     {

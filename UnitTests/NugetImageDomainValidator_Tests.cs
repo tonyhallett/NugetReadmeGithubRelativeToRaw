@@ -1,5 +1,5 @@
 ﻿using Moq;
-using NugetReadmeGithubRelativeToRaw;
+using NugetReadmeGithubRelativeToRaw.Rewriter.Validation;
 
 namespace UnitTests
 {

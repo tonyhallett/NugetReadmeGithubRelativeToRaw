@@ -4,7 +4,7 @@ using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using AngleSharp.Dom;
 
-namespace NugetReadmeGithubRelativeToRaw
+namespace NugetReadmeGithubRelativeToRaw.Rewriter
 {
     internal class RewritableMarkdownElementsProvider : IRewritableMarkdownElementsProvider
     {

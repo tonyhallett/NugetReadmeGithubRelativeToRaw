@@ -1,6 +1,6 @@
 ﻿using Markdig.Syntax;
 
-namespace NugetReadmeGithubRelativeToRaw
+namespace NugetReadmeGithubRelativeToRaw.Rewriter
 {
     internal class SourceReplacement
     {

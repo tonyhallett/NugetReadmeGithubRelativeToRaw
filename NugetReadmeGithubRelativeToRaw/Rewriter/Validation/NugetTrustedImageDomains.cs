@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-namespace NugetReadmeGithubRelativeToRaw
+namespace NugetReadmeGithubRelativeToRaw.Rewriter.Validation
 {
     [ExcludeFromCodeCoverage]
     internal class NugetTrustedImageDomains : INugetTrustedImageDomains

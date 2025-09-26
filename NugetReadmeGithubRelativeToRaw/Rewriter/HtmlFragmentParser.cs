@@ -4,7 +4,7 @@ using AngleSharp;
 using Markdig.Syntax;
 using AngleSharp.Dom;
 
-namespace NugetReadmeGithubRelativeToRaw
+namespace NugetReadmeGithubRelativeToRaw.Rewriter
 {
     internal class HtmlFragmentParser : IHtmlFragmentParser
     {

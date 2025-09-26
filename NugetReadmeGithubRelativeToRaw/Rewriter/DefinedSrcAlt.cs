@@ -1,8 +1,8 @@
 ﻿using AngleSharp.Html.Dom;
 
-namespace NugetReadmeGithubRelativeToRaw
+namespace NugetReadmeGithubRelativeToRaw.Rewriter
 {
-    internal struct DefinedSrcAlt
+    internal class DefinedSrcAlt
     {
         public DefinedSrcAlt(string src, string alt)
         {

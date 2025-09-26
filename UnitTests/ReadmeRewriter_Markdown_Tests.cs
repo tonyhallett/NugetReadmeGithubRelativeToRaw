@@ -1,4 +1,4 @@
-using NugetReadmeGithubRelativeToRaw;
+using NugetReadmeGithubRelativeToRaw.Rewriter.Validation;
 
 namespace UnitTests
 {
@@ -11,8 +11,8 @@ namespace UnitTests
         {
             var readmeContent = CreateMarkdownImage(relativePath);
             var repoUrl = CreateRepositoryUrl(username, reponame);
-            repoBranch = repoBranch ?? "master";
-            var expectedRedmeRewritten = CreateMarkdownImage($"https://raw.githubusercontent.com/{username}/{reponame}/{repoBranch}/{relativePath}");
+            var expectedRepoBranch = repoBranch ?? "master";
+            var expectedRedmeRewritten = CreateMarkdownImage($"https://raw.githubusercontent.com/{username}/{reponame}/{expectedRepoBranch}/{relativePath}");
             var readmeRewritten = ReadmeRewriter.Rewrite(readmeContent, repoUrl, repoBranch)!.RewrittenReadme;
             Assert.That(readmeRewritten, Is.EqualTo(expectedRedmeRewritten));
         }

@@ -1,4 +1,4 @@
-﻿namespace NugetReadmeGithubRelativeToRaw
+﻿namespace NugetReadmeGithubRelativeToRaw.Rewriter
 {
     internal interface IReadmeMarkdownElementsProcessor {
         

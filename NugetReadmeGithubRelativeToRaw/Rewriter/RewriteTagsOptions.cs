@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace NugetReadmeGithubRelativeToRaw
+namespace NugetReadmeGithubRelativeToRaw.Rewriter
 {
     [Flags]
     internal enum RewriteTagsOptions

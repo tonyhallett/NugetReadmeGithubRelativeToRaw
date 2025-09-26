@@ -1,6 +1,7 @@
 ﻿using System;
+using NugetReadmeGithubRelativeToRaw.Rewriter.Validation;
 
-namespace NugetReadmeGithubRelativeToRaw
+namespace NugetReadmeGithubRelativeToRaw.Rewriter
 {
     internal class ReadmeRewriter
     {

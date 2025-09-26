@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace NugetReadmeGithubRelativeToRaw
+namespace NugetReadmeGithubRelativeToRaw.Rewriter
 {
     internal class ReadmeRewriterResult
     {

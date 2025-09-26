@@ -2,7 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
-namespace NugetReadmeGithubRelativeToRaw
+namespace NugetReadmeGithubRelativeToRaw.Rewriter.Validation
 {
     [ExcludeFromCodeCoverage]
     internal class NugetGitHubBadgeValidator : INugetGitHubBadgeValidator

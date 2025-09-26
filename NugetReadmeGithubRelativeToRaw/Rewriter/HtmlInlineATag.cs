@@ -1,7 +1,7 @@
 ﻿using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 
-namespace NugetReadmeGithubRelativeToRaw
+namespace NugetReadmeGithubRelativeToRaw.Rewriter
 {
     internal class HtmlInlineATag
     {

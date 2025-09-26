@@ -1,8 +1,7 @@
 ﻿using System;
 
-namespace NugetReadmeGithubRelativeToRaw
+namespace NugetReadmeGithubRelativeToRaw.Rewriter.Validation
 {
-
     // https://github.com/NuGet/NuGetGallery/blob/main/src/NuGetGallery/Services/ImageDomainValidator.cs
     internal class NugetImageDomainValidator : INugetImageDomainValidator
     {

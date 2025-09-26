@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using AngleSharp.Html.Dom;
+using NugetReadmeGithubRelativeToRaw.Rewriter.Validation;
 
-namespace NugetReadmeGithubRelativeToRaw
+namespace NugetReadmeGithubRelativeToRaw.Rewriter
 {
     internal class ReadmeMarkdownElementsProcessor : IReadmeMarkdownElementsProcessor
     {
