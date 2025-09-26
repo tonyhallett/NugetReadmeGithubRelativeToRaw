@@ -9,14 +9,19 @@ namespace UnitTests
         [SetUp]
         public void Setup() => _readmeRewriter = new ReadmeRewriter();
 
-        protected static RewriteTagsOptions ParseRewriteTagsOptions(string rewriteTagsOptions) => (RewriteTagsOptions)Enum.Parse(typeof(RewriteTagsOptions), rewriteTagsOptions);
 
-        protected ReadmeRewriterResult RewriteUsernameReponameMainBranch(string readmeContent, RewriteTagsOptions rewriteTagsOptions = RewriteTagsOptions.All)
+        protected ReadmeRewriterResult RewriteUseRepoMainReadMe(string readmeContent, RewriteTagsOptions rewriteTagsOptions = RewriteTagsOptions.All)
         {
             var repoUrl = CreateRepositoryUrl("username", "reponame");
 
-            return ReadmeRewriter.Rewrite(readmeContent, repoUrl, "main", rewriteTagsOptions)!;
+            return ReadmeRewriter.Rewrite(readmeContent, "/readme.md", repoUrl, "main", rewriteTagsOptions)!;
         }
+
+        protected ReadmeRewriterResult RewriteUseRepoMainReadMe(string readmeContent, string rewriteTagsOptions)
+            => RewriteUseRepoMainReadMe(readmeContent, ParseRewriteTagsOptions(rewriteTagsOptions));
+
+        private static RewriteTagsOptions ParseRewriteTagsOptions(string rewriteTagsOptions) => (RewriteTagsOptions)Enum.Parse(typeof(RewriteTagsOptions), rewriteTagsOptions);
+
 
         protected static string CreateMarkdownImage(string path, string imageDescription = "description") => $"![{imageDescription}]({path})";
 

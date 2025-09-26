@@ -24,16 +24,16 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
             this.htmlFragmentParser = htmlFragmentParser;
         }
 
-        public IMarkdownElementsProcessResult Process(RelevantMarkdownElements relevantMarkdownElements, string rawUrl, RewriteTagsOptions rewriteTagsOptions)
+        public IMarkdownElementsProcessResult Process(RelevantMarkdownElements relevantMarkdownElements, OwnerRepoRefReadmePath ownerRepoRefReadmePath, RewriteTagsOptions rewriteTagsOptions)
         {
             var markdownElementsProcessResult = new MarkdownElementsProcessResult();
-            ProcessLinkInlines(relevantMarkdownElements.LinkInlines, markdownElementsProcessResult, rawUrl);
-            ProcessHtmlBlocks(relevantMarkdownElements.HtmlBlocks, markdownElementsProcessResult, rawUrl, rewriteTagsOptions);
-            ProcessHtmlInlines(relevantMarkdownElements.HtmlInlines, markdownElementsProcessResult, rawUrl, rewriteTagsOptions);
+            ProcessLinkInlines(relevantMarkdownElements.LinkInlines, markdownElementsProcessResult, ownerRepoRefReadmePath);
+            ProcessHtmlBlocks(relevantMarkdownElements.HtmlBlocks, markdownElementsProcessResult, ownerRepoRefReadmePath, rewriteTagsOptions);
+            ProcessHtmlInlines(relevantMarkdownElements.HtmlInlines, markdownElementsProcessResult, ownerRepoRefReadmePath, rewriteTagsOptions);
             return markdownElementsProcessResult;
         }
 
-        private void ProcessHtmlInlines(IEnumerable<HtmlInline> htmlInlines, MarkdownElementsProcessResult markdownElementsProcessResult, string rawUrl, RewriteTagsOptions rewriteTagsOptions)
+        private void ProcessHtmlInlines(IEnumerable<HtmlInline> htmlInlines, MarkdownElementsProcessResult markdownElementsProcessResult, OwnerRepoRefReadmePath ownerRepoRefReadmePath, RewriteTagsOptions rewriteTagsOptions)
         {
             foreach (var htmlInline in htmlInlines)
             {
@@ -47,7 +47,7 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
                     var href = anchorElement!.GetAttribute("href");
                     if (href != null && HrefIsValid(href))
                     {
-                        href = gitHubUrlHelper.GetAbsoluteOrGithubAbsoluteUrl(href, rawUrl);
+                        href = gitHubUrlHelper.GetAbsoluteOrGithubAbsoluteUrl(href, ownerRepoRefReadmePath, false);
                         markdownElementsProcessResult.AddSourceReplacement(htmlInlineATag.Span, $"[{anchorElement!.TextContent}]({href})");
                     }
                 }
@@ -66,8 +66,8 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
 
         private void ProcessHtmlBlocks(
             IEnumerable<HtmlBlock> htmlBlocks, 
-            MarkdownElementsProcessResult markdownElementsProcessResult, 
-            string rawUrl, 
+            MarkdownElementsProcessResult markdownElementsProcessResult,
+            OwnerRepoRefReadmePath ownerRepoRefReadmePath, 
             RewriteTagsOptions rewriteTagsOptions)
         {
             foreach (var htmlBlock in htmlBlocks)
@@ -86,7 +86,7 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
                             }
                         }else
                         {
-                            src = gitHubUrlHelper.GetGithubAbsoluteUrl(src, rawUrl)!;
+                            src = gitHubUrlHelper.GetGithubAbsoluteUrl(src, ownerRepoRefReadmePath, true)!;
                         }
                         var imgTagReplacement = $"![{srcAlt.Alt}]({src})";
                         AddSourceReplacement(imgTagReplacement);
@@ -102,11 +102,16 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
 
         private void ProcessLinkInlines(
             IEnumerable<LinkInline> linkInlines, 
-            MarkdownElementsProcessResult markdownElementsProcessResult, 
-            string rawUrl)
+            MarkdownElementsProcessResult markdownElementsProcessResult,
+            OwnerRepoRefReadmePath ownerRepoRefReadmePath)
         {
             foreach (var linkInline in linkInlines)
             {
+                if (linkInline.IsAutoLink)
+                {
+                    continue;
+                }
+
                 if (linkInline.IsImage)
                 {
                     var absoluteUri = gitHubUrlHelper.GetAbsoluteUri(linkInline.Url);
@@ -119,15 +124,15 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
                         }
                     }
                 }
-                
+
                 var urlSpan = linkInline.Reference != null ? linkInline.Reference.UrlSpan : linkInline.UrlSpan;
-                ProcessInlineUrl(linkInline.Url, rawUrl, urlSpan, markdownElementsProcessResult.AddSourceReplacement);
+                ProcessInlineUrl(linkInline.Url, linkInline.IsImage, ownerRepoRefReadmePath, urlSpan, markdownElementsProcessResult.AddSourceReplacement);
             }
         }
 
-        private void ProcessInlineUrl(string? url, string rawUrl, SourceSpan span, Action<SourceSpan, string> addSourceReplacement)
+        private void ProcessInlineUrl(string? url,bool isImage, OwnerRepoRefReadmePath ownerRepoRefReadmePath, SourceSpan span, Action<SourceSpan, string> addSourceReplacement)
         {
-            var githubAbsoluteUrl = gitHubUrlHelper.GetGithubAbsoluteUrl(url, rawUrl);
+            var githubAbsoluteUrl = gitHubUrlHelper.GetGithubAbsoluteUrl(url, ownerRepoRefReadmePath, isImage);
             if (githubAbsoluteUrl != null)
             {
                 addSourceReplacement(span, githubAbsoluteUrl);

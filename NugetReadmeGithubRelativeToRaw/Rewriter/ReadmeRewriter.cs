@@ -1,8 +1,49 @@
 ﻿using System;
+using System.Globalization;
+using System.Security.AccessControl;
 using NugetReadmeGithubRelativeToRaw.Rewriter.Validation;
 
 namespace NugetReadmeGithubRelativeToRaw.Rewriter
 {
+    internal class OwnerRepoRefReadmePath
+    {
+        public string OwnerRepoUrlPart { get; }
+        public string Ref { get; }
+        public string ReadmeRelativePath { get; }
+        private OwnerRepoRefReadmePath(string ownerRepoUrlPart, string @ref, string readmeRelativePath)
+        {
+            OwnerRepoUrlPart = ownerRepoUrlPart;
+            Ref = @ref;
+            ReadmeRelativePath = readmeRelativePath;
+        }
+
+        public static OwnerRepoRefReadmePath? Create(string githubRepoUrl, string? githubRef, string readMePath)
+        {
+            githubRepoUrl = GetGithubRepoUrl(githubRepoUrl);
+
+            if (githubRepoUrl.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase))
+            {
+                var parts = githubRepoUrl.Substring("https://github.com/".Length).Split('/');
+                if (parts.Length >= 2)
+                {
+                    var ownerRepoRefUrlPart = $"{parts[0]}/{parts[1]}";
+                    return new OwnerRepoRefReadmePath(ownerRepoRefUrlPart, githubRef ?? "master", readMePath);
+                }
+            }
+            return null;
+        }
+
+        private static string GetGithubRepoUrl(string githubRepoUrl)
+        {
+            var repoUrl = githubRepoUrl.TrimEnd('/');
+            if (repoUrl.EndsWith(".git", StringComparison.OrdinalIgnoreCase))
+            {
+                repoUrl = repoUrl.Substring(0, repoUrl.Length - 4);
+            }
+
+            return repoUrl;
+        }
+    }
     internal class ReadmeRewriter
     {
         private readonly IRewritableMarkdownElementsProvider rewritableMarkdownElementsProvider;
@@ -32,42 +73,25 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
         {
         }
 
-        public ReadmeRewriterResult? Rewrite(string readme, string githubRepoUrl, string? repoBranch, RewriteTagsOptions  rewriteTagsOptions = RewriteTagsOptions.All)
+        // the githubRef is the branch, tag or commit sha, if null the master branch is used
+        public ReadmeRewriterResult? Rewrite(
+            string readme, 
+            string readmeRelativePath,
+            string githubRepoUrl, 
+            string? githubRef = null, 
+            RewriteTagsOptions  rewriteTagsOptions = RewriteTagsOptions.All)
         {
-            string? rawUrl = GetRawUrl(githubRepoUrl, repoBranch);
-            return rawUrl == null ? null : Rewrite(readme, rawUrl, rewriteTagsOptions);
-        }
-
-        private string? GetRawUrl(string githubRepoUrl, string? repoBranch)
-        {
-            repoBranch = repoBranch ?? "master";
-            string? rawUrl = null;
-
-            if (!string.IsNullOrEmpty(githubRepoUrl))
-            {
-                var repoUrl = githubRepoUrl.TrimEnd('/');
-                if (repoUrl.EndsWith(".git", StringComparison.OrdinalIgnoreCase))
-                    repoUrl = repoUrl.Substring(0, repoUrl.Length - 4);
-
-                if (repoUrl.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase))
-                {
-                    var parts = repoUrl.Substring("https://github.com/".Length).Split('/');
-                    if (parts.Length >= 2)
-                    {
-                        rawUrl = $"https://raw.githubusercontent.com/{parts[0]}/{parts[1]}/{repoBranch}";
-                    }
-                }
-            }
-
-            return rawUrl;
+            OwnerRepoRefReadmePath? ownerRepoRefReadmePath = OwnerRepoRefReadmePath.Create(githubRepoUrl, githubRef, readmeRelativePath);
+            
+            return ownerRepoRefReadmePath == null ? null : Rewrite(readme, ownerRepoRefReadmePath, rewriteTagsOptions);
         }
 
         
-        private ReadmeRewriterResult Rewrite(string readme,string rawUrl, RewriteTagsOptions rewriteTagsOptions)
+        private ReadmeRewriterResult Rewrite(string readme,OwnerRepoRefReadmePath ownerRepoRefReadmePath, RewriteTagsOptions rewriteTagsOptions)
         {
             var relevantMarkdownElements = rewritableMarkdownElementsProvider.GetRelevantMarkdownElementsWithSourceLocation(readme, rewriteTagsOptions == RewriteTagsOptions.None);
             
-            var markdownElementsProcessResult = readmeMarkdownElementsProcessor.Process(relevantMarkdownElements, rawUrl, rewriteTagsOptions);
+            var markdownElementsProcessResult = readmeMarkdownElementsProcessor.Process(relevantMarkdownElements, ownerRepoRefReadmePath, rewriteTagsOptions);
             
             var rewrittenReadme = readmeReplacer.Replace(readme, markdownElementsProcessResult.SourceReplacements);
             return new ReadmeRewriterResult(rewrittenReadme, markdownElementsProcessResult.UnsupportedImageDomains);

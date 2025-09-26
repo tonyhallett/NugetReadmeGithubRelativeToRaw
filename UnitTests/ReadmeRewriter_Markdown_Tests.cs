@@ -7,13 +7,13 @@ namespace UnitTests
         [TestCase("dir/fileName.ext","username","reponame","main")]
         [TestCase("dir2/fileName2.ext", "username2", "reponame2", "master")]
         [TestCase("dir/fileName.ext", "username", "reponame", null)] // should default to master
-        public void Should_Rewrite_Relative_Markdown_Image(string relativePath, string username, string reponame,string? repoBranch)
+        public void Should_Rewrite_Relative_Markdown_Image(string relativePath, string username, string reponame,string? repoRef)
         {
             var readmeContent = CreateMarkdownImage(relativePath);
             var repoUrl = CreateRepositoryUrl(username, reponame);
-            var expectedRepoBranch = repoBranch ?? "master";
-            var expectedRedmeRewritten = CreateMarkdownImage($"https://raw.githubusercontent.com/{username}/{reponame}/{expectedRepoBranch}/{relativePath}");
-            var readmeRewritten = ReadmeRewriter.Rewrite(readmeContent, repoUrl, repoBranch)!.RewrittenReadme;
+            var expectedRepoRef = repoRef ?? "master";
+            var expectedRedmeRewritten = CreateMarkdownImage($"https://raw.githubusercontent.com/{username}/{reponame}/{expectedRepoRef}/{relativePath}");
+            var readmeRewritten = ReadmeRewriter.Rewrite(readmeContent, "/readme.md", repoUrl, repoRef)!.RewrittenReadme;
             Assert.That(readmeRewritten, Is.EqualTo(expectedRedmeRewritten));
         }
 
@@ -25,7 +25,7 @@ namespace UnitTests
     ${CreateMarkdownImage("dir/file.png")}
     ```
 ";
-            var readmeRewritten = RewriteUsernameReponameMainBranch(codeBlock).RewrittenReadme;
+            var readmeRewritten = RewriteUseRepoMainReadMe(codeBlock).RewrittenReadme;
 
             Assert.That(readmeRewritten, Is.EqualTo(codeBlock));
         }
@@ -35,7 +35,7 @@ namespace UnitTests
         {
             var readmeContent = CreateMarkdownImage("https://example.com/image.png");
 
-            var readmeRewritten = RewriteUsernameReponameMainBranch(readmeContent).RewrittenReadme;
+            var readmeRewritten = RewriteUseRepoMainReadMe(readmeContent).RewrittenReadme;
             
             Assert.That(readmeRewritten, Is.EqualTo(readmeContent));
         }
@@ -46,7 +46,7 @@ namespace UnitTests
         {
             var readmeContent = CreateMarkdownImage(imageUrl);
 
-            var unsupportedImageDomains = RewriteUsernameReponameMainBranch(readmeContent).UnsupportedImageDomains;
+            var unsupportedImageDomains = RewriteUseRepoMainReadMe(readmeContent).UnsupportedImageDomains;
             if(expectedUntrusted)
             {
                 Assert.That(unsupportedImageDomains, Has.Count.EqualTo(1));
@@ -68,24 +68,42 @@ namespace UnitTests
             {
                 Assert.That(NugetTrustedImageDomains.Instance.IsImageDomainTrusted("github.com"), Is.False);
 
-                Assert.That(RewriteUsernameReponameMainBranch(workflowBadgeMarkdown).UnsupportedImageDomains, Is.Empty);
+                Assert.That(RewriteUseRepoMainReadMe(workflowBadgeMarkdown).UnsupportedImageDomains, Is.Empty);
             });
         }
 
         [Test]
-        public void Should_Rewrite_Reference_Links()
+        public void Should_Rewrite_Reference_Image_Links()
         {
             var readmeContent = @"
 ![alt][label]
 
 [label]: image.png
 ";
-            var rewrittenReadMe = RewriteUsernameReponameMainBranch(readmeContent).RewrittenReadme;
+            var rewrittenReadMe = RewriteUseRepoMainReadMe(readmeContent).RewrittenReadme;
 
             var expectedReadme = @"
 ![alt][label]
 
 [label]: https://raw.githubusercontent.com/username/reponame/main/image.png
+";
+            Assert.That(rewrittenReadMe, Is.EqualTo(expectedReadme));
+        }
+
+        [Test]
+        public void Should_Rewrite_Reference_Links()
+        {
+            var readmeContent = @"
+[alt][label]
+
+[label]: page.md
+";
+            var rewrittenReadMe = RewriteUseRepoMainReadMe(readmeContent).RewrittenReadme;
+
+            var expectedReadme = @"
+[alt][label]
+
+[label]: https://github.com/username/reponame/blob/main/page.md
 ";
             Assert.That(rewrittenReadMe, Is.EqualTo(expectedReadme));
         }

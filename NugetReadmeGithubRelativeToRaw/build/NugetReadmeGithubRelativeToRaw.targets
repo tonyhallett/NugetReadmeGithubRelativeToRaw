@@ -22,23 +22,14 @@
     <Error Condition="'$(RepositoryUrl)' == ''"
            Text="ReadmeRewrite: you must set &lt;RepositoryUrl&gt; in the project." />
 
-    <!-- Resolve defaults (BaseReadme defaults to README.md if not supplied) -->
     <PropertyGroup>
-      <_BaseReadmeRelative Condition="'$(BaseReadme)' == ''">README.md</_BaseReadmeRelative>
-      <_BaseReadmeRelative Condition="'$(BaseReadme)' != ''">$(BaseReadme)</_BaseReadmeRelative>
-
-      <!-- absolute paths used for IO by the task -->
-      <_BaseReadmeAbsolute>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(_BaseReadmeRelative)'))</_BaseReadmeAbsolute>
       <_OutputReadmeAbsolute>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(PackageReadmeFile)'))</_OutputReadmeAbsolute>
-
-      <!-- default branch -->
-      <_RepoBranch Condition="'$(RepositoryBranch)' == ''">master</_RepoBranch>
-      <_RepoBranch Condition="'$(RepositoryBranch)' != ''">$(RepositoryBranch)</_RepoBranch>
     </PropertyGroup>
 
     <!-- Run the rewrite task -->
     <ReadmeRewriterTask
-        BaseReadme="$(_BaseReadmeAbsolute)"
+        ProjectDirectoryPath="$(MSBuildProjectDirectory)"
+        ReadmeRelativePath="$(PackageReadmeFile)"
         OutputReadme="$(_OutputReadmeAbsolute)"
         RepositoryUrl="$(RepositoryUrl)"
         RepositoryBranch="$(_RepoBranch)" />

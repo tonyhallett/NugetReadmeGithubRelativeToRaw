@@ -2,7 +2,10 @@
 {
     internal interface IReadmeMarkdownElementsProcessor {
         
-        IMarkdownElementsProcessResult Process(RelevantMarkdownElements relevantMarkdownElements, string rawUrl, RewriteTagsOptions rewriteTagsOptions);
+        IMarkdownElementsProcessResult Process(
+            RelevantMarkdownElements relevantMarkdownElements, 
+            OwnerRepoRefReadmePath ownerRepoRefReadmePath, 
+            RewriteTagsOptions rewriteTagsOptions);
     
     }
 }

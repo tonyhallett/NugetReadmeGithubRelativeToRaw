@@ -4,10 +4,10 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
 {
     interface IGitHubUrlHelper
     {
-        string? GetGithubAbsoluteUrl(string? url, string rawUrl);
+        string? GetGithubAbsoluteUrl(string? url, OwnerRepoRefReadmePath ownerRepoRefReadmePath, bool isImage);
 
         Uri? GetAbsoluteUri(string? url);
 
-        string GetAbsoluteOrGithubAbsoluteUrl(string url, string rawUrl);
+        string GetAbsoluteOrGithubAbsoluteUrl(string url, OwnerRepoRefReadmePath ownerRepoRefReadmePath, bool isImage);
     }
 }

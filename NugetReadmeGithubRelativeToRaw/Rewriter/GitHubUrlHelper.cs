@@ -4,28 +4,40 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
 {
     internal class GitHubUrlHelper : IGitHubUrlHelper
     {
-        // todo when relative is relative to the readme and relative to the repository
-        public string? GetGithubAbsoluteUrl(string? url, string rawUrl)
+        public string? GetGithubAbsoluteUrl(
+            string? url, 
+            OwnerRepoRefReadmePath ownerRepoRefReadmePath, 
+            bool isImage)
         {
             if (url == null || IsAbsolute(url))
             {
                 return null;
             }
 
-            // bool relativeToRepositorRoot = false;  todo
+            url = url.Trim();
 
-            return $"{rawUrl}/{url}";
+            // ignore empty and fragments
+            if(string.IsNullOrEmpty(url) || url.StartsWith("#", StringComparison.Ordinal))
+            {
+                return null;
+            }
 
+            string urlWithoutPath = isImage ? $"https://raw.githubusercontent.com/{ownerRepoRefReadmePath.OwnerRepoUrlPart}/{ownerRepoRefReadmePath.Ref}" :
+                $"https://github.com/{ownerRepoRefReadmePath.OwnerRepoUrlPart}/blob/{ownerRepoRefReadmePath.Ref}";
+
+            // todo
+
+            return $"{urlWithoutPath}/{url}";
         }
 
-        public string GetAbsoluteOrGithubAbsoluteUrl(string url, string rawUrl)
+        public string GetAbsoluteOrGithubAbsoluteUrl(string url, OwnerRepoRefReadmePath ownerRepoRefReadmePath, bool isImage)
         {
             if (IsAbsolute(url))
             {
                 return url!;
             }
 
-            return GetGithubAbsoluteUrl(url, rawUrl)!;
+            return GetGithubAbsoluteUrl(url, ownerRepoRefReadmePath, isImage)!;
         }
 
         public Uri? GetAbsoluteUri(string? url)
