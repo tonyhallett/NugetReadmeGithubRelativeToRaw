@@ -17,7 +17,7 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
             ReadmeRelativePath = readmeRelativePath;
         }
 
-        public static OwnerRepoRefReadmePath? Create(string githubRepoUrl, string? githubRef, string readMePath)
+        public static OwnerRepoRefReadmePath? Create(string githubRepoUrl, string? githubRef, string readMeRelativePath)
         {
             githubRepoUrl = GetGithubRepoUrl(githubRepoUrl);
 
@@ -27,7 +27,7 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
                 if (parts.Length >= 2)
                 {
                     var ownerRepoRefUrlPart = $"{parts[0]}/{parts[1]}";
-                    return new OwnerRepoRefReadmePath(ownerRepoRefUrlPart, githubRef ?? "master", readMePath);
+                    return new OwnerRepoRefReadmePath(ownerRepoRefUrlPart, githubRef ?? "master", readMeRelativePath);
                 }
             }
             return null;

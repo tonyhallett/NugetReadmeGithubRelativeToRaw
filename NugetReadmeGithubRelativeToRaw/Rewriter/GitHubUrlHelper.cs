@@ -16,18 +16,24 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
 
             url = url.Trim();
 
-            // ignore empty and fragments
-            if(string.IsNullOrEmpty(url) || url.StartsWith("#", StringComparison.Ordinal))
-            {
-                return null;
-            }
-
             string urlWithoutPath = isImage ? $"https://raw.githubusercontent.com/{ownerRepoRefReadmePath.OwnerRepoUrlPart}/{ownerRepoRefReadmePath.Ref}" :
                 $"https://github.com/{ownerRepoRefReadmePath.OwnerRepoUrlPart}/blob/{ownerRepoRefReadmePath.Ref}";
 
-            // todo
+            // repo relative
+            if (url.StartsWith("/"))
+            {
+                return $"{urlWithoutPath}{url}";
+            }
 
-            return $"{urlWithoutPath}/{url}";
+            // readme directory relative
+            var readmeRelativePath = ownerRepoRefReadmePath.ReadmeRelativePath;
+            if (!readmeRelativePath.StartsWith("/"))
+            {
+                readmeRelativePath = "/" + readmeRelativePath;
+            }
+
+            var readmeUri = new Uri(urlWithoutPath + readmeRelativePath);
+            return new Uri(readmeUri, url).OriginalString;
         }
 
         public string GetAbsoluteOrGithubAbsoluteUrl(string url, OwnerRepoRefReadmePath ownerRepoRefReadmePath, bool isImage)

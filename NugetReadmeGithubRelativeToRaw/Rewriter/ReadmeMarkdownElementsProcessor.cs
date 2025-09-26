@@ -4,6 +4,7 @@ using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using AngleSharp.Html.Dom;
 using NugetReadmeGithubRelativeToRaw.Rewriter.Validation;
+using AngleSharp.Dom;
 
 namespace NugetReadmeGithubRelativeToRaw.Rewriter
 {
@@ -107,7 +108,7 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
         {
             foreach (var linkInline in linkInlines)
             {
-                if (linkInline.IsAutoLink)
+                if (IgnoreLinkInline(linkInline))
                 {
                     continue;
                 }
@@ -128,6 +129,24 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
                 var urlSpan = linkInline.Reference != null ? linkInline.Reference.UrlSpan : linkInline.UrlSpan;
                 ProcessInlineUrl(linkInline.Url, linkInline.IsImage, ownerRepoRefReadmePath, urlSpan, markdownElementsProcessResult.AddSourceReplacement);
             }
+        }
+
+        private bool IgnoreLinkInline(LinkInline linkInline)
+        {
+            if (linkInline.IsAutoLink || linkInline.Url == null)
+            {
+                return true;
+            }
+
+            var url = linkInline.Url.Trim();
+
+            // ignore empty and fragments
+            if (string.IsNullOrEmpty(url) || url.StartsWith("#", StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         private void ProcessInlineUrl(string? url,bool isImage, OwnerRepoRefReadmePath ownerRepoRefReadmePath, SourceSpan span, Action<SourceSpan, string> addSourceReplacement)
