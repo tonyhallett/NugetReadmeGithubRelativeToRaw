@@ -9,7 +9,7 @@ namespace UnitTests
         {
             var gitHubUrlHelper = new GitHubUrlHelper();
             var url = gitHubUrlHelper.GetGithubAbsoluteUrl(null, OwnerRepoRefReadmePath.Create("https://github.com/owner/repo", "main", "/readme.md")!, false);
-            Assert.IsNull(url);
+            Assert.That(url, Is.Null);
         }
 
         [TestCase(@"http://www.example.com")]
@@ -19,7 +19,7 @@ namespace UnitTests
         {
             var gitHubUrlHelper = new GitHubUrlHelper();
             var url = gitHubUrlHelper.GetGithubAbsoluteUrl(absoluteUrl, OwnerRepoRefReadmePath.Create("https://github.com/owner/repo", "main", "/readme.md")!, false);
-            Assert.IsNull(url);
+            Assert.That(url, Is.Null);
         }
 
         [Test]

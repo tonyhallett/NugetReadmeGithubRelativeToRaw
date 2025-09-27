@@ -8,11 +8,11 @@ namespace NugetReadmeGithubRelativeToRaw
     {
         [Required]
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
-        public string ProjectDirectoryPath { get; set; }      // absolute path
+        public string ProjectDirectoryPath { get; set; }
         [Required]
-        public string ReadmeRelativePath { get; set; }      // absolute path
+        public string? ReadmeRelativePath { get; set; }
         [Required]
-        public string OutputReadme { get; set; }    // absolute path
+        public string OutputReadme { get; set; }
         [Required]
         public string RepositoryUrl { get; set; }
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
@@ -21,6 +21,7 @@ namespace NugetReadmeGithubRelativeToRaw
 
         public override bool Execute()
         {
+            ReadmeRelativePath = ReadmeRelativePath ?? "readme.md";
             var readmePath = Path.Combine(ProjectDirectoryPath, ReadmeRelativePath);
             if (!File.Exists(readmePath))
             {

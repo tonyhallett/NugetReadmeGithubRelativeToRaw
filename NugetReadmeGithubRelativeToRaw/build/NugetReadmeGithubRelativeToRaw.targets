@@ -1,6 +1,6 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
       <UsingTask TaskName="ReadmeRewriterTask"
-             AssemblyFile="$(MSBuildThisFileDirectory)netstandard2.0\NugetReadmeGithubRelativeToRaw.dll" />
+             AssemblyFile="$(MSBuildThisFileDirectory)..\tasks\netstandard2.0\$(MSBuildThisFileName).dll" />
 
      <!-- 1. Always define a dummy target to anchor things if BeforePack is not defined -->
     <Target Name="BeforePackHook_NugetReadmeGithubRelativeToRaw" />
@@ -29,7 +29,7 @@
     <!-- Run the rewrite task -->
     <ReadmeRewriterTask
         ProjectDirectoryPath="$(MSBuildProjectDirectory)"
-        ReadmeRelativePath="$(PackageReadmeFile)"
+        ReadmeRelativePath="$(BaseReadme)"
         OutputReadme="$(_OutputReadmeAbsolute)"
         RepositoryUrl="$(RepositoryUrl)"
         RepositoryBranch="$(_RepoBranch)" />

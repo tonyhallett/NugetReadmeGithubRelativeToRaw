@@ -43,7 +43,7 @@ Before
 ![image](https://raw.githubusercontent.com/tonyhallett/arepo/master/images/image.png)
 After
 ";
-
+            
             var nuPkgPath = GetNuPkgPath();
             _nugetBuildTargetsTestSetup.Setup(
                 projectWithReadMe,
@@ -55,10 +55,11 @@ After
                 });
 
             if (projectDirectory == null) throw new Exception("Project directory not set");
-            
+
             var dependentNugetReadMe = GetDependentNugetReadMe(projectDirectory!, "package-readme.md");
 
             Assert.That(dependentNugetReadMe, Is.EqualTo(expectedNugetReadme));
+            
         }
 
         private static string GetDependentNugetReadMe(DirectoryInfo directoryInfo, string readMeFileName)
