@@ -3,13 +3,13 @@
 namespace NugetReadmeGithubRelativeToRaw.Rewriter.Validation
 {
     // https://github.com/NuGet/NuGetGallery/blob/main/src/NuGetGallery/Services/ImageDomainValidator.cs
-    internal class NugetImageDomainValidator : INugetImageDomainValidator
+    internal class NuGetImageDomainValidator : INuGetImageDomainValidator
     {
         
-        private readonly INugetTrustedImageDomains _trustedImageDomains;
-        private readonly INugetGitHubBadgeValidator _nugetGitHubBadgeValidator;
+        private readonly INuGetTrustedImageDomains _trustedImageDomains;
+        private readonly INuGetGitHubBadgeValidator _nugetGitHubBadgeValidator;
 
-        public NugetImageDomainValidator(INugetTrustedImageDomains trustedImageDomains, INugetGitHubBadgeValidator nugetGitHubBadgeValidator)
+        public NuGetImageDomainValidator(INuGetTrustedImageDomains trustedImageDomains, INuGetGitHubBadgeValidator nugetGitHubBadgeValidator)
         {
             _trustedImageDomains = trustedImageDomains;
             _nugetGitHubBadgeValidator = nugetGitHubBadgeValidator;

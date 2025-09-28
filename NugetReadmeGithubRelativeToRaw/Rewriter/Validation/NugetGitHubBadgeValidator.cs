@@ -5,15 +5,15 @@ using System.Text.RegularExpressions;
 namespace NugetReadmeGithubRelativeToRaw.Rewriter.Validation
 {
     [ExcludeFromCodeCoverage]
-    internal class NugetGitHubBadgeValidator : INugetGitHubBadgeValidator
+    internal class NuGetGitHubBadgeValidator : INuGetGitHubBadgeValidator
     {
         private static readonly TimeSpan RegexTimeout = TimeSpan.FromMinutes(1);
-        private static readonly Regex GithubBadgeUrlRegEx = new Regex("^(https|http):\\/\\/github\\.com\\/[^/]+\\/[^/]+(\\/actions)?\\/workflows\\/.*badge\\.svg", RegexOptions.IgnoreCase, RegexTimeout);
+        private static readonly Regex GitHubBadgeUrlRegEx = new Regex("^(https|http):\\/\\/github\\.com\\/[^/]+\\/[^/]+(\\/actions)?\\/workflows\\/.*badge\\.svg", RegexOptions.IgnoreCase, RegexTimeout);
         public bool Validate(string url)
         {
             try
             {
-                return GithubBadgeUrlRegEx.IsMatch(url);
+                return GitHubBadgeUrlRegEx.IsMatch(url);
             }
             catch (RegexMatchTimeoutException)
             {

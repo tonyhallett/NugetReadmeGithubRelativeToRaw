@@ -38,7 +38,7 @@ Before
 After
 ";
 
-            var expectedNugetReadme = @"
+            var expectedNuGetReadme = @"
 Before
 ![image](https://raw.githubusercontent.com/tonyhallett/arepo/master/images/image.png)
 After
@@ -56,16 +56,16 @@ After
 
             if (projectDirectory == null) throw new Exception("Project directory not set");
 
-            var dependentNugetReadMe = GetDependentNugetReadMe(projectDirectory!, "package-readme.md");
+            var dependentNuGetReadMe = GetDependentNuGetReadMe(projectDirectory!, "package-readme.md");
 
-            Assert.That(dependentNugetReadMe, Is.EqualTo(expectedNugetReadme));
+            Assert.That(dependentNuGetReadMe, Is.EqualTo(expectedNuGetReadme));
             
         }
 
-        private static string GetDependentNugetReadMe(DirectoryInfo directoryInfo, string readMeFileName)
+        private static string GetDependentNuGetReadMe(DirectoryInfo directoryInfo, string readMeFileName)
         {
-            var dependentNugetPath = GetDependentNugetPath(directoryInfo);
-            using var zip = ZipFile.OpenRead(dependentNugetPath);
+            var dependentNuGetPath = GetDependentNuGetPath(directoryInfo);
+            using var zip = ZipFile.OpenRead(dependentNuGetPath);
 
             // nuget always stores readme at the root of the package
             var entry = zip.GetEntry(readMeFileName);
@@ -74,7 +74,7 @@ After
             return reader.ReadToEnd();
         }
 
-        private static string GetDependentNugetPath(DirectoryInfo directoryInfo) => directoryInfo.GetFiles("*.nupkg", SearchOption.AllDirectories).First().FullName;
+        private static string GetDependentNuGetPath(DirectoryInfo directoryInfo) => directoryInfo.GetFiles("*.nupkg", SearchOption.AllDirectories).First().FullName;
 
         private static void CreateRelativeReadmeFile(DirectoryInfo projectDirectory, string readMe)
             => File.WriteAllText(Path.Combine(projectDirectory.FullName, "readme.md"), readMe);

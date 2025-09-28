@@ -10,12 +10,12 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
 {
     internal class ReadmeMarkdownElementsProcessor : IReadmeMarkdownElementsProcessor
     {
-        private readonly INugetImageDomainValidator nugetImageDomainValidator;
+        private readonly INuGetImageDomainValidator nugetImageDomainValidator;
         private readonly IGitHubUrlHelper gitHubUrlHelper;
         private readonly IHtmlFragmentParser htmlFragmentParser;
 
         public ReadmeMarkdownElementsProcessor(
-            INugetImageDomainValidator nugetImageDomainValidator, 
+            INuGetImageDomainValidator nugetImageDomainValidator, 
             IGitHubUrlHelper gitHubUrlHelper,
             IHtmlFragmentParser htmlFragmentParser
             )
@@ -48,7 +48,7 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
                     var href = anchorElement!.GetAttribute("href");
                     if (href != null && HrefIsValid(href))
                     {
-                        href = gitHubUrlHelper.GetAbsoluteOrGithubAbsoluteUrl(href, ownerRepoRefReadmePath, false);
+                        href = gitHubUrlHelper.GetAbsoluteOrGitHubAbsoluteUrl(href, ownerRepoRefReadmePath, false);
                         markdownElementsProcessResult.AddSourceReplacement(htmlInlineATag.Span, $"[{anchorElement!.TextContent}]({href})");
                     }
                 }
@@ -87,7 +87,7 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
                             }
                         }else
                         {
-                            src = gitHubUrlHelper.GetGithubAbsoluteUrl(src, ownerRepoRefReadmePath, true)!;
+                            src = gitHubUrlHelper.GetGitHubAbsoluteUrl(src, ownerRepoRefReadmePath, true)!;
                         }
                         var imgTagReplacement = $"![{srcAlt.Alt}]({src})";
                         AddSourceReplacement(imgTagReplacement);
@@ -151,7 +151,7 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
 
         private void ProcessInlineUrl(string? url,bool isImage, OwnerRepoRefReadmePath ownerRepoRefReadmePath, SourceSpan span, Action<SourceSpan, string> addSourceReplacement)
         {
-            var githubAbsoluteUrl = gitHubUrlHelper.GetGithubAbsoluteUrl(url, ownerRepoRefReadmePath, isImage);
+            var githubAbsoluteUrl = gitHubUrlHelper.GetGitHubAbsoluteUrl(url, ownerRepoRefReadmePath, isImage);
             if (githubAbsoluteUrl != null)
             {
                 addSourceReplacement(span, githubAbsoluteUrl);

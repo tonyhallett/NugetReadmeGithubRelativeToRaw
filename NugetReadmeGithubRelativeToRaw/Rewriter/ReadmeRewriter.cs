@@ -17,13 +17,13 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
             ReadmeRelativePath = readmeRelativePath;
         }
 
-        public static OwnerRepoRefReadmePath? Create(string githubRepoUrl, string? githubRef, string readMeRelativePath)
+        public static OwnerRepoRefReadmePath? Create(string gitHubRepoUrl, string? githubRef, string readMeRelativePath)
         {
-            githubRepoUrl = GetGithubRepoUrl(githubRepoUrl);
+            gitHubRepoUrl = GetGitHubRepoUrl(gitHubRepoUrl);
 
-            if (githubRepoUrl.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase))
+            if (gitHubRepoUrl.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase))
             {
-                var parts = githubRepoUrl.Substring("https://github.com/".Length).Split('/');
+                var parts = gitHubRepoUrl.Substring("https://github.com/".Length).Split('/');
                 if (parts.Length >= 2)
                 {
                     var ownerRepoRefUrlPart = $"{parts[0]}/{parts[1]}";
@@ -33,7 +33,7 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
             return null;
         }
 
-        private static string GetGithubRepoUrl(string githubRepoUrl)
+        private static string GetGitHubRepoUrl(string githubRepoUrl)
         {
             var repoUrl = githubRepoUrl.TrimEnd('/');
             if (repoUrl.EndsWith(".git", StringComparison.OrdinalIgnoreCase))
@@ -65,7 +65,7 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
             new RewritableMarkdownElementsProvider(),
             new ReadmeReplacer(),
             new ReadmeMarkdownElementsProcessor(
-                new NugetImageDomainValidator(NugetTrustedImageDomains.Instance, new NugetGitHubBadgeValidator()),
+                new NuGetImageDomainValidator(NuGetTrustedImageDomains.Instance, new NuGetGitHubBadgeValidator()),
                 new GitHubUrlHelper(),
                 new HtmlFragmentParser()
                 )

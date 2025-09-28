@@ -7,6 +7,6 @@ An [MsBuild custom target](https://learn.microsoft.com/en-us/nuget/concepts/msbu
 | Property          | Default   | Required   | Description                                                    |
 | ----------        |---------  |----------  | ---------------------------------                              |
 | BaseReadme        | README.md | No         | The github readme relative path to transform                   |
-| PackageReadmeFile |           | Yes.       | The output readme relative path. Nuget property                |
-| RepositoryUrl     |           | Yes.       | A Github RepositoryUrl Nuget property                          |
+| PackageReadmeFile |           | Yes.       | The output readme relative path. NuGet property                |
+| RepositoryUrl     |           | Yes.       | A GitHub RepositoryUrl NuGet property                          |
 | RepositoryBranch  | master    | No.        | The branch to use for the raw URL.                             |

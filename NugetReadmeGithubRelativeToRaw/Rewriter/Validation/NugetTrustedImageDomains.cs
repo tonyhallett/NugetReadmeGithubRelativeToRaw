@@ -5,7 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace NugetReadmeGithubRelativeToRaw.Rewriter.Validation
 {
     [ExcludeFromCodeCoverage]
-    internal class NugetTrustedImageDomains : INugetTrustedImageDomains
+    internal class NuGetTrustedImageDomains : INuGetTrustedImageDomains
     {
         // https://github.com/NuGet/NuGetGallery/blob/2e04a148fa40d004f40cd648c83b35c4b264cfd9/src/NuGetGallery/App_Data/Files/Content/Trusted-Image-Domains.json
         private static readonly string[] s_trustedImageDomainList = new string[]
@@ -49,9 +49,9 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter.Validation
         };
         private static readonly HashSet<string> s_trustedImageDomains = new HashSet<string>(s_trustedImageDomainList, StringComparer.OrdinalIgnoreCase);
 
-        private NugetTrustedImageDomains() { }
+        private NuGetTrustedImageDomains() { }
 
-        public static NugetTrustedImageDomains Instance { get; } = new NugetTrustedImageDomains();
+        public static NuGetTrustedImageDomains Instance { get; } = new NuGetTrustedImageDomains();
         
         public bool IsImageDomainTrusted(string imageDomain)
         {

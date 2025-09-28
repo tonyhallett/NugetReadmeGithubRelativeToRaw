@@ -24,8 +24,10 @@
     <TargetsForTfmSpecificBuildOutput>
         $(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage
     </TargetsForTfmSpecificBuildOutput>
-    <!-- https://learn.microsoft.com/en-us/nuget/reference/errors-and-warnings/nu5100 -->
-     <NoWarn>$(NoWarn);NU5100;NU5128</NoWarn>
+    <!-- https://learn.microsoft.com/en-us/nuget/reference/errors-and-warnings/nu5100 5128 -->
+     <NoWarn>NU5100;$(NoWarn)</NoWarn>
+     <!-- will suppress NU5128 it skips code that woulld result in the warning-->
+     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
      <GenerateDependencyFile>true</GenerateDependencyFile>
   </PropertyGroup>
   <ItemGroup>

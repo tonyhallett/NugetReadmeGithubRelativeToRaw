@@ -1,6 +1,6 @@
 ﻿namespace NugetReadmeGithubRelativeToRaw.Rewriter.Validation
 {
-    internal interface INugetGitHubBadgeValidator
+    internal interface INuGetGitHubBadgeValidator
     {
         bool Validate(string url);
     }

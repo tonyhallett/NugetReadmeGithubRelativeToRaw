@@ -59,14 +59,14 @@ namespace UnitTests
         }
 
         [Test]
-        public void Should_Trust_Github_Badge_Urls()
+        public void Should_Trust_GitHub_Badge_Urls()
         {
             var workflowBadgeMarkdown = @"
 [![Workflow name](https://github.com/user/repo/actions/workflows/workflowname.yaml/badge.svg)](https://github.com/user/repo/actions/workflows/workflowname.yaml)
 ";
             Assert.Multiple(() =>
             {
-                Assert.That(NugetTrustedImageDomains.Instance.IsImageDomainTrusted("github.com"), Is.False);
+                Assert.That(NuGetTrustedImageDomains.Instance.IsImageDomainTrusted("github.com"), Is.False);
 
                 Assert.That(RewriteUseRepoMainReadMe(workflowBadgeMarkdown).UnsupportedImageDomains, Is.Empty);
             });

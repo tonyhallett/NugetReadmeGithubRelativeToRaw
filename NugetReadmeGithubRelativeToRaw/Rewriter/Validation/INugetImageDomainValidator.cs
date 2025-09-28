@@ -1,6 +1,6 @@
 ﻿namespace NugetReadmeGithubRelativeToRaw.Rewriter.Validation
 {
-    internal interface INugetImageDomainValidator
+    internal interface INuGetImageDomainValidator
     {
         bool IsTrustedImageDomain(string uriString);
     }

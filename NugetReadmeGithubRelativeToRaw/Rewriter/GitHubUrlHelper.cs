@@ -4,7 +4,7 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
 {
     internal class GitHubUrlHelper : IGitHubUrlHelper
     {
-        public string? GetGithubAbsoluteUrl(
+        public string? GetGitHubAbsoluteUrl(
             string? url, 
             OwnerRepoRefReadmePath ownerRepoRefReadmePath, 
             bool isImage)
@@ -36,14 +36,14 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
             return new Uri(readmeUri, url).OriginalString;
         }
 
-        public string GetAbsoluteOrGithubAbsoluteUrl(string url, OwnerRepoRefReadmePath ownerRepoRefReadmePath, bool isImage)
+        public string GetAbsoluteOrGitHubAbsoluteUrl(string url, OwnerRepoRefReadmePath ownerRepoRefReadmePath, bool isImage)
         {
             if (IsAbsolute(url))
             {
                 return url!;
             }
 
-            return GetGithubAbsoluteUrl(url, ownerRepoRefReadmePath, isImage)!;
+            return GetGitHubAbsoluteUrl(url, ownerRepoRefReadmePath, isImage)!;
         }
 
         public Uri? GetAbsoluteUri(string? url)
