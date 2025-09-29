@@ -1,17 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Build.Framework;
 using NugetReadmeGithubRelativeToRaw.Rewriter;
 
 namespace NugetReadmeGithubRelativeToRaw
 {
-    internal class RemoveReplaceSettingsMetadataNames
-    {
-        public const string ReplacementText = nameof(ReplacementText);
-        public const string CommentOrRegex = nameof(CommentOrRegex);
-        public const string Start = nameof(Start);
-        public const string End = nameof(End);
-    }
     internal class RemoveReplaceSettingsProvider : IRemoveReplaceSettingsProvider
     {
         internal const string NumPartsError = "RemoveCommentIdentifiers must have two semicolon delimited values: start and end.";
@@ -42,11 +36,12 @@ namespace NugetReadmeGithubRelativeToRaw
             {
                 return removalReplacements;
             }
+
             var initialErrorsCount = errors.Count;
             foreach(var removeReplaceItem in removeReplaceItems)
             {
                 var replacementText = GetReplacementTextFromItem(removeReplaceItem);
-                var commentOrRegex = GetCommentOrRegexMetadata(removeReplaceItem, errors);
+                var commentOrRegex = GetCommentOrRegexFromMetadata(removeReplaceItem, errors);
                 if (!commentOrRegex.HasValue)
                 {
                     break;
@@ -74,9 +69,12 @@ namespace NugetReadmeGithubRelativeToRaw
             return removalReplacements;
         }
 
+        private string? GetReplacementTextFromMetadata(ITaskItem removeReplaceItem)
+            => removeReplaceItem.GetMetadata(RemoveReplaceSettingsMetadataNames.ReplacementText);
+
         private string? GetReplacementTextFromItem(ITaskItem removeReplaceItem)
         {
-            var replacementText = removeReplaceItem.GetMetadata(RemoveReplaceSettingsMetadataNames.ReplacementText);
+            var replacementText = GetReplacementTextFromMetadata(removeReplaceItem);
             if (replacementText == null)
             {
                 if (_ioHelper.FileExists(removeReplaceItem.ItemSpec))
@@ -88,9 +86,12 @@ namespace NugetReadmeGithubRelativeToRaw
             return replacementText;
         }
 
-        private CommentOrRegex? GetCommentOrRegexMetadata(ITaskItem removeReplaceItem, List<string> errors)
+        private string? GetCommentOrRegexFromMetadata(ITaskItem removeReplaceItem)
+            => removeReplaceItem.GetMetadata(RemoveReplaceSettingsMetadataNames.CommentOrRegex);
+
+        private CommentOrRegex? GetCommentOrRegexFromMetadata(ITaskItem removeReplaceItem, List<string> errors)
         {
-            var commentOrRegexStr = removeReplaceItem.GetMetadata(RemoveReplaceSettingsMetadataNames.CommentOrRegex);
+            var commentOrRegexStr = GetCommentOrRegexFromMetadata(removeReplaceItem);
             if (commentOrRegexStr == null)
             {
                 errors.Add($"CommentOrRegex metadata is required on RemoveReplace item '{removeReplaceItem.ItemSpec}'.");
@@ -105,9 +106,10 @@ namespace NugetReadmeGithubRelativeToRaw
             return commentOrRegex;
         }
 
+        private string? GetStartFromMetadata(ITaskItem removeReplaceItem) => removeReplaceItem.GetMetadata(RemoveReplaceSettingsMetadataNames.Start);
         private (string start,string? end)? GetStartEndMetadata(ITaskItem removeReplaceItem, List<string> errors)
         {
-            var start = removeReplaceItem.GetMetadata(RemoveReplaceSettingsMetadataNames.Start);
+            var start = GetStartFromMetadata(removeReplaceItem);
             if (start == null)
             {
                 errors.Add($"Start metadata is required on RemoveReplace item '{removeReplaceItem.ItemSpec}'.");

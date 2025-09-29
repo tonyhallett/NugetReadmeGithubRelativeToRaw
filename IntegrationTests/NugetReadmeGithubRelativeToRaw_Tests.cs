@@ -1,6 +1,8 @@
 using System.IO.Compression;
 using System.Reflection;
 using NugetBuildTargetsIntegrationTesting;
+using NugetReadmeGithubRelativeToRaw;
+using NugetReadmeGithubRelativeToRaw.Rewriter;
 
 namespace IntegrationTests
 {
@@ -65,8 +67,11 @@ After
         [Test]
         public void Should_Have_Correct_Replaced_To_End_Inline_Readme_In_Generated_NuPkg()
         {
+            var replace = "# Replace";
+            var replacement = "Nuget only";
+
             DirectoryInfo? projectDirectory = null;
-            var projectWithReadMe = @"<Project Sdk=""Microsoft.NET.Sdk"">
+            var projectWithReadMe = @$"<Project Sdk=""Microsoft.NET.Sdk"">
     <PropertyGroup>
         <TargetFramework>net461</TargetFramework>
         <Authors>TonyHUK</Authors>
@@ -77,22 +82,25 @@ After
         <IsPackable>True</IsPackable>
      </PropertyGroup>
      <ItemGroup>
-
+        <RemoveReplaceItem Include=""1"">
+            {CreateMetadataElement(RemoveReplaceSettingsMetadataNames.Start, replace)}
+            {CreateMetadataElement(RemoveReplaceSettingsMetadataNames.CommentOrRegex,nameof(CommentOrRegex.Regex))}
+            {CreateMetadataElement(RemoveReplaceSettingsMetadataNames.ReplacementText, replacement)}
+            <ReplacementText>Nuget only</ReplacementText>
+        </RemoveReplaceItem>
      </ItemGroup>
 </Project>
 "; // todo
 
-            var relativeReadme = @"
+            var relativeReadme = @$"
 Before
-![image](images/image.png)
-After
-# Nuget replaced
+{replace}
+This will be replaced
 ";
 
-            var expectedNuGetReadme = @"
+            var expectedNuGetReadme = @$"
 Before
-![image](https://raw.githubusercontent.com/tonyhallett/arepo/master/images/image.png)
-After
+{replacement}
 ";
 
             var nuPkgPath = GetNuPkgPath();
@@ -112,6 +120,9 @@ After
             Assert.That(dependentNuGetReadMe, Is.EqualTo(expectedNuGetReadme));
 
         }
+
+        private string CreateMetadataElement(string metadataName, string contents)
+            => $"<{metadataName}>{contents}</{metadataName}>";
 
         private static string GetDependentNuGetReadMe(DirectoryInfo directoryInfo, string readMeFileName)
         {
