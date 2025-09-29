@@ -3,6 +3,20 @@ using NugetReadmeGithubRelativeToRaw.Rewriter;
 
 namespace NugetReadmeGithubRelativeToRaw
 {
+
+    internal interface IRemoveReplaceSettingsProvider
+    {
+        RemoveReplaceSettings Provide(ITaskItem[]? removeReplaceItems, string? removeCommentIdentifiers);
+    }
+
+    internal class RemoveReplaceSettingsProvider : IRemoveReplaceSettingsProvider
+    {
+        public RemoveReplaceSettings Provide(ITaskItem[]? removeReplaceItems, string? removeCommentIdentifiers)
+        {
+            throw new System.NotImplementedException();
+        }
+    }
+
     public class ReadmeRewriterTask : Microsoft.Build.Utilities.Task
     {
         [Required]
@@ -20,9 +34,15 @@ namespace NugetReadmeGithubRelativeToRaw
 
         public string? RewriteTagsOptions { get; set; }
 
+        public string? RemoveCommentIdentifiers { get; set; }
+
+        public ITaskItem[]? RemoveReplaceItems { get; set; }
+
         internal IIOHelper IOHelper { get; set; } = new IOHelper();
 
         internal IReadmeRewriter ReadmeRewriter { get; set; } = new ReadmeRewriter();
+
+        internal IRemoveReplaceSettingsProvider RemoveReplaceSettingsProvider { get; set; } = new RemoveReplaceSettingsProvider();
 
         public override bool Execute()
         {
@@ -43,7 +63,8 @@ namespace NugetReadmeGithubRelativeToRaw
         private void Rewrite(string readmePath, string readmeRelativePath)
         {
             var readMeContents = IOHelper.ReadAllText(readmePath);
-            var readmeRewriterResult = ReadmeRewriter.Rewrite(readMeContents, readmeRelativePath, RepositoryUrl, RepositoryBranch, GetRewriteTagsOptions());
+            var removeReplaceSettings = RemoveReplaceSettingsProvider.Provide(RemoveReplaceItems, RemoveCommentIdentifiers);
+            var readmeRewriterResult = ReadmeRewriter.Rewrite(readMeContents, readmeRelativePath, RepositoryUrl, RepositoryBranch, GetRewriteTagsOptions(), removeReplaceSettings);
             if (readmeRewriterResult != null)
             {
                 ProcessReadmeWriteResult(readmeRewriterResult);

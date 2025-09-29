@@ -10,10 +10,14 @@ namespace UnitTests
         private const string repositoryUrl = "repositoryurl";
         private const string repositoryBranch = "repositorybranch";
         private const string projectDirectoryPath = "projectdir";
+        private const string removeCommentIdentifiers = "removeCommentIdentifiers";
+        private readonly ITaskItem[] removeReplaceTaskItems = new ITaskItem[] { new Mock<ITaskItem>().Object };
         private DummyIOHelper _ioHelper;
+        private Mock<IRemoveReplaceSettingsProvider> _mockRemoveReplaceSettingsProvider;
         private Mock<IReadmeRewriter> _mockReadmeRewriter;
         private DummyLogBuildEngine _dummyLogBuildEngine;
         private ReadmeRewriterTask _readmeRewriterTask;
+        private RemoveReplaceSettings providedRemoveReplaceSettings;
 
         private sealed class DummyIOHelper : IIOHelper
         {
@@ -51,17 +55,25 @@ namespace UnitTests
         public void Setup()
         {
             _ioHelper = new DummyIOHelper();
+            _mockRemoveReplaceSettingsProvider = new Mock<IRemoveReplaceSettingsProvider>();
             _mockReadmeRewriter = new Mock<IReadmeRewriter>();
             _dummyLogBuildEngine = new DummyLogBuildEngine();
             _readmeRewriterTask = new ReadmeRewriterTask
             {
                 BuildEngine = _dummyLogBuildEngine,
                 IOHelper = _ioHelper,
-                ReadmeRewriter = _mockReadmeRewriter.Object
+                ReadmeRewriter = _mockReadmeRewriter.Object,
+                RemoveReplaceSettingsProvider = _mockRemoveReplaceSettingsProvider.Object
             };
             _readmeRewriterTask.RepositoryUrl = repositoryUrl;
             _readmeRewriterTask.RepositoryBranch = repositoryBranch;
             _readmeRewriterTask.ProjectDirectoryPath = projectDirectoryPath;
+            providedRemoveReplaceSettings = new RemoveReplaceSettings(null, Enumerable.Empty<RemovalOrReplacement>().ToList());
+            _mockRemoveReplaceSettingsProvider.Setup(removeReplaceSettingsProvider => removeReplaceSettingsProvider.Provide(removeReplaceTaskItems, removeCommentIdentifiers))
+                .Returns(providedRemoveReplaceSettings);
+            _readmeRewriterTask.RemoveReplaceItems = removeReplaceTaskItems;
+            _readmeRewriterTask.RemoveCommentIdentifiers = removeCommentIdentifiers;
+            
         }
 
         [Test]
@@ -150,7 +162,7 @@ namespace UnitTests
                 repositoryUrl,
                 repositoryBranch,
                 It.IsAny<RewriteTagsOptions>(),
-                It.IsAny<RemoveReplaceSettings>())).Returns(readmeRewriterResult);
+                providedRemoveReplaceSettings)).Returns(readmeRewriterResult);
 
             var result = ExecuteReadmeExists();
 
@@ -183,5 +195,7 @@ namespace UnitTests
                 Assert.That(_dummyLogBuildEngine.LoggedEvents.OfType<BuildWarningEventArgs>().Any(), Is.False);
             }
         }
+
+
     }
 }
