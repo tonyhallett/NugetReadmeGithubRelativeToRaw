@@ -10,11 +10,11 @@ namespace UnitTests
         public void Setup() => _readmeRewriter = new ReadmeRewriter();
 
 
-        protected ReadmeRewriterResult RewriteUseRepoMainReadMe(string readmeContent, RewriteTagsOptions rewriteTagsOptions = RewriteTagsOptions.All)
+        protected ReadmeRewriterResult RewriteUseRepoMainReadMe(string readmeContent, RewriteTagsOptions rewriteTagsOptions = RewriteTagsOptions.All, RemoveReplaceSettings? removeReplaceSettings = null)
         {
             var repoUrl = CreateRepositoryUrl("username", "reponame");
 
-            return ReadmeRewriter.Rewrite(readmeContent, "/readme.md", repoUrl, "main", rewriteTagsOptions)!;
+            return ReadmeRewriter.Rewrite(readmeContent, "/readme.md", repoUrl, "main", rewriteTagsOptions, removeReplaceSettings)!;
         }
 
         protected ReadmeRewriterResult RewriteUseRepoMainReadMe(string readmeContent, string rewriteTagsOptions)
