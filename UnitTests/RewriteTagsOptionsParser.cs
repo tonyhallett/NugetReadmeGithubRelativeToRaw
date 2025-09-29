@@ -1,10 +1,9 @@
-using System;
+using NugetReadmeGithubRelativeToRaw.Rewriter;
 
-namespace NugetReadmeGithubRelativeToRaw.Rewriter
+namespace UnitTests
 {
     internal static class RewriteTagsOptionsParser
     {
         public static RewriteTagsOptions Parse(string rewriteTagsOptions) => (RewriteTagsOptions)Enum.Parse(typeof(RewriteTagsOptions), rewriteTagsOptions);
-
     }
 }

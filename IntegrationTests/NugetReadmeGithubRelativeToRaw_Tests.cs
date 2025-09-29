@@ -100,8 +100,7 @@ This will be replaced
 
             var expectedNuGetReadme = @$"
 Before
-{replacement}
-";
+{replacement}";
 
             var nuPkgPath = GetNuPkgPath();
             _nugetBuildTargetsTestSetup.Setup(
@@ -121,7 +120,7 @@ Before
 
         }
 
-        private string CreateMetadataElement(string metadataName, string contents)
+        private static string CreateMetadataElement(string metadataName, string contents)
             => $"<{metadataName}>{contents}</{metadataName}>";
 
         private static string GetDependentNuGetReadMe(DirectoryInfo directoryInfo, string readMeFileName)

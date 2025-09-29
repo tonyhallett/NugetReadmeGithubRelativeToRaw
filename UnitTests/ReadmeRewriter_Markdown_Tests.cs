@@ -137,9 +137,8 @@ For full details visit [GitHub](https://github.com/username/reponame/blob/main/r
             var readMeContent = @$"
 Before
 {replace}
-This will be replaced"
-;
-
+This will be replaced
+";
             RemovalOrReplacement replacement = new RemovalOrReplacement(CommentOrRegex.Regex, replace, null, nugetReplacement);
             var removeReplaceSettings = new RemoveReplaceSettings(null, [replacement]);
 

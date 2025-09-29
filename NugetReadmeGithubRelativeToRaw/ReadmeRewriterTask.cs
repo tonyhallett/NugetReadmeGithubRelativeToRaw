@@ -1,4 +1,5 @@
-﻿using Microsoft.Build.Framework;
+﻿using System;
+using Microsoft.Build.Framework;
 using NugetReadmeGithubRelativeToRaw.Rewriter;
 
 namespace NugetReadmeGithubRelativeToRaw
@@ -81,11 +82,7 @@ namespace NugetReadmeGithubRelativeToRaw
             var options = Rewriter.RewriteTagsOptions.All;
             if(RewriteTagsOptions != null)
             {
-                try
-                {
-                    options = RewriteTagsOptionsParser.Parse(RewriteTagsOptions);
-                }
-                catch
+                if(!Enum.TryParse(RewriteTagsOptions, out options))
                 {
                     Log.LogWarning("Could not parse the RewriteTagsOptions: " + RewriteTagsOptions + ". Using the default: " + options);
                 }

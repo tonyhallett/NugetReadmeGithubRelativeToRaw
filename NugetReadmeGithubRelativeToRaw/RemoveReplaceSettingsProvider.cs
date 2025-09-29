@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Build.Framework;
 using NugetReadmeGithubRelativeToRaw.Rewriter;
 
@@ -52,12 +51,13 @@ namespace NugetReadmeGithubRelativeToRaw
                 {
                     break;
                 }
-
+                var (start, endRaw) = startEnd.Value;
+                var end = endRaw == string.Empty ? null : endRaw;
                 removalReplacements.Add(
                     new RemovalOrReplacement(
                         commentOrRegex.Value,
-                        startEnd.Value.start,
-                        startEnd.Value.end,
+                        start,
+                        end,
                         replacementText));
             }
 
@@ -92,7 +92,7 @@ namespace NugetReadmeGithubRelativeToRaw
         private CommentOrRegex? GetCommentOrRegexFromMetadata(ITaskItem removeReplaceItem, List<string> errors)
         {
             var commentOrRegexStr = GetCommentOrRegexFromMetadata(removeReplaceItem);
-            if (commentOrRegexStr == null)
+            if (commentOrRegexStr == null || commentOrRegexStr == string.Empty)
             {
                 errors.Add($"CommentOrRegex metadata is required on RemoveReplace item '{removeReplaceItem.ItemSpec}'.");
                 return null;
@@ -107,10 +107,11 @@ namespace NugetReadmeGithubRelativeToRaw
         }
 
         private string? GetStartFromMetadata(ITaskItem removeReplaceItem) => removeReplaceItem.GetMetadata(RemoveReplaceSettingsMetadataNames.Start);
-        private (string start,string? end)? GetStartEndMetadata(ITaskItem removeReplaceItem, List<string> errors)
+        
+        private (string Start,string? End)? GetStartEndMetadata(ITaskItem removeReplaceItem, List<string> errors)
         {
             var start = GetStartFromMetadata(removeReplaceItem);
-            if (start == null)
+            if (start == null || start == string.Empty)
             {
                 errors.Add($"Start metadata is required on RemoveReplace item '{removeReplaceItem.ItemSpec}'.");
                 return null;

@@ -20,8 +20,6 @@ namespace UnitTests
         protected ReadmeRewriterResult RewriteUserRepoMainReadMe(string readmeContent, string rewriteTagsOptions)
             => RewriteUserRepoMainReadMe(readmeContent,RewriteTagsOptionsParser.Parse(rewriteTagsOptions));
 
-
-
         protected static string CreateMarkdownImage(string path, string imageDescription = "description") => $"![{imageDescription}]({path})";
 
         protected static string CreateImage(string alt, string src, bool lowercaseTag = true)
