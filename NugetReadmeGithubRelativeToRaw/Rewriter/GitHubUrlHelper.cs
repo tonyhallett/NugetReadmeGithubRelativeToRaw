@@ -4,6 +4,8 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
 {
     internal class GitHubUrlHelper : IGitHubUrlHelper
     {
+        public static GitHubUrlHelper Instance { get; } = new GitHubUrlHelper();
+
         public string? GetGitHubAbsoluteUrl(
             string? url, 
             OwnerRepoRefReadmePath ownerRepoRefReadmePath, 

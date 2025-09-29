@@ -19,6 +19,6 @@
         public CommentOrRegex CommentOrRegex { get; }
         public string Start { get; }
         public string? End { get; }
-        public string? ReplacementText { get; }
+        public string? ReplacementText { get; set; }
     }
 }

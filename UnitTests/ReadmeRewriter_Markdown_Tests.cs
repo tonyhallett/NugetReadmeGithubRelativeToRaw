@@ -1,3 +1,4 @@
+using NugetReadmeGithubRelativeToRaw.Rewriter;
 using NugetReadmeGithubRelativeToRaw.Rewriter.Validation;
 
 namespace UnitTests
@@ -25,7 +26,7 @@ namespace UnitTests
     ${CreateMarkdownImage("dir/file.png")}
     ```
 ";
-            var readmeRewritten = RewriteUseRepoMainReadMe(codeBlock).RewrittenReadme;
+            var readmeRewritten = RewriteUserRepoMainReadMe(codeBlock).RewrittenReadme;
 
             Assert.That(readmeRewritten, Is.EqualTo(codeBlock));
         }
@@ -35,7 +36,7 @@ namespace UnitTests
         {
             var readmeContent = CreateMarkdownImage("https://example.com/image.png");
 
-            var readmeRewritten = RewriteUseRepoMainReadMe(readmeContent).RewrittenReadme;
+            var readmeRewritten = RewriteUserRepoMainReadMe(readmeContent).RewrittenReadme;
             
             Assert.That(readmeRewritten, Is.EqualTo(readmeContent));
         }
@@ -46,7 +47,7 @@ namespace UnitTests
         {
             var readmeContent = CreateMarkdownImage(imageUrl);
 
-            var unsupportedImageDomains = RewriteUseRepoMainReadMe(readmeContent).UnsupportedImageDomains;
+            var unsupportedImageDomains = RewriteUserRepoMainReadMe(readmeContent).UnsupportedImageDomains;
             if(expectedUntrusted)
             {
                 Assert.That(unsupportedImageDomains, Has.Count.EqualTo(1));
@@ -68,7 +69,7 @@ namespace UnitTests
             {
                 Assert.That(NuGetTrustedImageDomains.Instance.IsImageDomainTrusted("github.com"), Is.False);
 
-                Assert.That(RewriteUseRepoMainReadMe(workflowBadgeMarkdown).UnsupportedImageDomains, Is.Empty);
+                Assert.That(RewriteUserRepoMainReadMe(workflowBadgeMarkdown).UnsupportedImageDomains, Is.Empty);
             });
         }
 
@@ -80,7 +81,7 @@ namespace UnitTests
 
 [label]: image.png
 ";
-            var rewrittenReadMe = RewriteUseRepoMainReadMe(readmeContent).RewrittenReadme;
+            var rewrittenReadMe = RewriteUserRepoMainReadMe(readmeContent).RewrittenReadme;
 
             var expectedReadme = @"
 ![alt][label]
@@ -98,7 +99,7 @@ namespace UnitTests
 
 [label]: page.md
 ";
-            var rewrittenReadMe = RewriteUseRepoMainReadMe(readmeContent).RewrittenReadme;
+            var rewrittenReadMe = RewriteUserRepoMainReadMe(readmeContent).RewrittenReadme;
 
             var expectedReadme = @"
 [alt][label]
@@ -106,6 +107,26 @@ namespace UnitTests
 [label]: https://github.com/username/reponame/blob/main/page.md
 ";
             Assert.That(rewrittenReadMe, Is.EqualTo(expectedReadme));
+        }
+
+        [Test]
+        public void Should_Replace_Github_Readme_Marker()
+        {
+            var readMeContent = @"
+Intro
+# Github only
+";
+            var githubReplacementLine = $"For full details visit [GitHub]({ReadmeRewriter.GithubReadmeMarker})";
+            RemovalOrReplacement githubReplacement = new RemovalOrReplacement(CommentOrRegex.Regex, "# Github only", null, githubReplacementLine);
+            var removeReplaceSettings = new RemoveReplaceSettings(null, [githubReplacement]);
+
+            var rewrittenReadMe = RewriteUserRepoMainReadMe(readMeContent, RewriteTagsOptions.None,removeReplaceSettings).RewrittenReadme;
+
+            var expectedReadMeContent = @"
+Intro
+For full details visit [GitHub](https://github.com/username/reponame/blob/main/readme.md)";
+
+            Assert.That(rewrittenReadMe, Is.EqualTo(expectedReadMeContent));
         }
     }
 }

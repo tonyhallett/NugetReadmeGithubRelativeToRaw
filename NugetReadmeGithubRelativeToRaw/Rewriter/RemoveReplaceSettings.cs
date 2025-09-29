@@ -13,6 +13,7 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
         }
 
         public RemoveCommentIdentifiers? RemoveCommentIdentifiers { get; }
+
         public List<RemovalOrReplacement> RemovalsOrReplacements { get; }
     }
 }

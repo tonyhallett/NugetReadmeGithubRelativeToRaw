@@ -23,9 +23,6 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
             // Keep empty entries (we want to preserve blank lines)
             var lines = normalized.Split('\n');
 
-            RemoveCommentRegexes? removeCommentRegexes = settings.RemoveCommentIdentifiers != null
-                ? RemoveCommentRegexes.Create(settings.RemoveCommentIdentifiers)
-                : null;
             var sb = new StringBuilder();
             bool inRemoval = false;
 
