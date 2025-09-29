@@ -11,13 +11,19 @@ namespace UnitTests
         private const string repositoryBranch = "repositorybranch";
         private const string projectDirectoryPath = "projectdir";
         private const string removeCommentIdentifiers = "removeCommentIdentifiers";
-        private readonly ITaskItem[] removeReplaceTaskItems = new ITaskItem[] { new Mock<ITaskItem>().Object };
+        private readonly ITaskItem[] removeReplaceTaskItems = [new Mock<ITaskItem>().Object];
         private DummyIOHelper _ioHelper;
         private Mock<IRemoveReplaceSettingsProvider> _mockRemoveReplaceSettingsProvider;
         private Mock<IReadmeRewriter> _mockReadmeRewriter;
         private DummyLogBuildEngine _dummyLogBuildEngine;
         private ReadmeRewriterTask _readmeRewriterTask;
-        private RemoveReplaceSettings providedRemoveReplaceSettings;
+        private TestRemoveReplaceSettingsResult removeReplaceSettingsResult;
+
+        private class TestRemoveReplaceSettingsResult : IRemoveReplaceSettingsResult
+        {
+            public IReadOnlyList<string>? Errors { get; set; }
+            public RemoveReplaceSettings? Settings { get; set; }
+        }
 
         private sealed class DummyIOHelper : IIOHelper
         {
@@ -63,14 +69,14 @@ namespace UnitTests
                 BuildEngine = _dummyLogBuildEngine,
                 IOHelper = _ioHelper,
                 ReadmeRewriter = _mockReadmeRewriter.Object,
-                RemoveReplaceSettingsProvider = _mockRemoveReplaceSettingsProvider.Object
+                RemoveReplaceSettingsProvider = _mockRemoveReplaceSettingsProvider.Object,
+                RepositoryUrl = repositoryUrl,
+                RepositoryBranch = repositoryBranch,
+                ProjectDirectoryPath = projectDirectoryPath
             };
-            _readmeRewriterTask.RepositoryUrl = repositoryUrl;
-            _readmeRewriterTask.RepositoryBranch = repositoryBranch;
-            _readmeRewriterTask.ProjectDirectoryPath = projectDirectoryPath;
-            providedRemoveReplaceSettings = new RemoveReplaceSettings(null, Enumerable.Empty<RemovalOrReplacement>().ToList());
+            removeReplaceSettingsResult = new TestRemoveReplaceSettingsResult();
             _mockRemoveReplaceSettingsProvider.Setup(removeReplaceSettingsProvider => removeReplaceSettingsProvider.Provide(removeReplaceTaskItems, removeCommentIdentifiers))
-                .Returns(providedRemoveReplaceSettings);
+                .Returns(removeReplaceSettingsResult);
             _readmeRewriterTask.RemoveReplaceItems = removeReplaceTaskItems;
             _readmeRewriterTask.RemoveCommentIdentifiers = removeCommentIdentifiers;
             
@@ -132,7 +138,7 @@ namespace UnitTests
         [Test]
         public void Should_Log_Error_For_Every_Unsupported_Image_Domain()
         {
-            ReadmeRewriterResult readmeRewriterResult = new ReadmeRewriterResult("rewrittenReadme", new List<string> { "unsupported1", "unsupported2" });
+            ReadmeRewriterResult readmeRewriterResult = new ReadmeRewriterResult("rewrittenReadme", ["unsupported1", "unsupported2"]);
             _mockReadmeRewriter.Setup(readmeRewriter => readmeRewriter.Rewrite(
                 It.IsAny<string>(),
                 It.IsAny<string>(),
@@ -154,15 +160,15 @@ namespace UnitTests
         public void Should_Write_Rewritten_Readme_To_OutputReadme()
         {
             _readmeRewriterTask.OutputReadme = "outputReadme.md";
-
-            ReadmeRewriterResult readmeRewriterResult = new ReadmeRewriterResult("rewrittenReadme", new List<string>());
+            removeReplaceSettingsResult.Settings = new RemoveReplaceSettings(null, []);
+            ReadmeRewriterResult readmeRewriterResult = new ReadmeRewriterResult("rewrittenReadme", []);
             _mockReadmeRewriter.Setup(readmeRewriter => readmeRewriter.Rewrite(
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 repositoryUrl,
                 repositoryBranch,
                 It.IsAny<RewriteTagsOptions>(),
-                providedRemoveReplaceSettings)).Returns(readmeRewriterResult);
+                removeReplaceSettingsResult.Settings)).Returns(readmeRewriterResult);
 
             var result = ExecuteReadmeExists();
 

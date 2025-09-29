@@ -32,7 +32,10 @@
         ReadmeRelativePath="$(BaseReadme)"
         OutputReadme="$(_OutputReadmeAbsolute)"
         RepositoryUrl="$(RepositoryUrl)"
-        RepositoryBranch="$(_RepoBranch)" />
+        RepositoryBranch="$(_RepoBranch)"
+        RemoveCommentIdentifiers="$(RemoveCommentIdentifiers)"
+        RemoveReplaceItems="@(RemoveReplaceItem)"
+        />
 
     <ItemGroup>
         <None Include="$(PackageReadmeFile)" Pack="true" PackagePath=""/>

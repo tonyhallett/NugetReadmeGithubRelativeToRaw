@@ -14,8 +14,8 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
         public static RemoveCommentRegexes Create(RemoveCommentIdentifiers removeCommentIdentifiers)
         {
             return new RemoveCommentRegexes(
-                CreateRegex(removeCommentIdentifiers.StartCommentIdentifier),
-                CreateRegex(removeCommentIdentifiers.EndCommentIdentifier));
+                CreateRegex(removeCommentIdentifiers.Start),
+                CreateRegex(removeCommentIdentifiers.End));
         }
 
         public static Regex CreateRegex(string commentIdentifier)

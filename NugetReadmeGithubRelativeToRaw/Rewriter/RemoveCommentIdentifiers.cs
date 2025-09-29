@@ -4,10 +4,10 @@
     {
         public RemoveCommentIdentifiers(string startCommentIdentifier, string endCommentIdentifier)
         {
-            StartCommentIdentifier = startCommentIdentifier;
-            EndCommentIdentifier = endCommentIdentifier;
+            Start = startCommentIdentifier;
+            End = endCommentIdentifier;
         }
-        public string StartCommentIdentifier { get; }
-        public string EndCommentIdentifier { get; }
+        public string Start { get; }
+        public string End { get; }
     }
 }

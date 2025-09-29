@@ -3,20 +3,6 @@ using NugetReadmeGithubRelativeToRaw.Rewriter;
 
 namespace NugetReadmeGithubRelativeToRaw
 {
-
-    internal interface IRemoveReplaceSettingsProvider
-    {
-        RemoveReplaceSettings Provide(ITaskItem[]? removeReplaceItems, string? removeCommentIdentifiers);
-    }
-
-    internal class RemoveReplaceSettingsProvider : IRemoveReplaceSettingsProvider
-    {
-        public RemoveReplaceSettings Provide(ITaskItem[]? removeReplaceItems, string? removeCommentIdentifiers)
-        {
-            throw new System.NotImplementedException();
-        }
-    }
-
     public class ReadmeRewriterTask : Microsoft.Build.Utilities.Task
     {
         [Required]
@@ -42,7 +28,7 @@ namespace NugetReadmeGithubRelativeToRaw
 
         internal IReadmeRewriter ReadmeRewriter { get; set; } = new ReadmeRewriter();
 
-        internal IRemoveReplaceSettingsProvider RemoveReplaceSettingsProvider { get; set; } = new RemoveReplaceSettingsProvider();
+        internal IRemoveReplaceSettingsProvider RemoveReplaceSettingsProvider { get; set; } = new RemoveReplaceSettingsProvider(new IOHelper());
 
         public override bool Execute()
         {
@@ -54,17 +40,32 @@ namespace NugetReadmeGithubRelativeToRaw
             }
             else
             {
-                Rewrite(readmePath, readmeRelativePath);
+                TryRewrite(IOHelper.ReadAllText(readmePath), readmeRelativePath);
             }
             
             return !Log.HasLoggedErrors;
         }
 
-        private void Rewrite(string readmePath, string readmeRelativePath)
+        private void TryRewrite(string readmeContents, string readmeRelativePath)
         {
-            var readMeContents = IOHelper.ReadAllText(readmePath);
-            var removeReplaceSettings = RemoveReplaceSettingsProvider.Provide(RemoveReplaceItems, RemoveCommentIdentifiers);
-            var readmeRewriterResult = ReadmeRewriter.Rewrite(readMeContents, readmeRelativePath, RepositoryUrl, RepositoryBranch, GetRewriteTagsOptions(), removeReplaceSettings);
+            var removeReplaceSettingsResult = RemoveReplaceSettingsProvider.Provide(RemoveReplaceItems, RemoveCommentIdentifiers);
+            if(removeReplaceSettingsResult.Errors?.Count > 0)
+            {
+                foreach(var error in removeReplaceSettingsResult.Errors)
+                {
+                    Log.LogError(error);
+                }
+            }
+            else
+            {
+                Rewrite(readmeContents, readmeRelativePath, removeReplaceSettingsResult.Settings);
+            }
+            
+        }
+
+        private void Rewrite(string readmeContents, string readmeRelativePath, RemoveReplaceSettings? removeReplaceSettings)
+        {
+            var readmeRewriterResult = ReadmeRewriter.Rewrite(readmeContents, readmeRelativePath, RepositoryUrl, RepositoryBranch, GetRewriteTagsOptions(), removeReplaceSettings);
             if (readmeRewriterResult != null)
             {
                 ProcessReadmeWriteResult(readmeRewriterResult);

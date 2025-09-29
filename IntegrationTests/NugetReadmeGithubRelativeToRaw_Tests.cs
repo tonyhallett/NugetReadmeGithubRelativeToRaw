@@ -62,6 +62,57 @@ After
             
         }
 
+        [Test]
+        public void Should_Have_Correct_Replaced_To_End_Inline_Readme_In_Generated_NuPkg()
+        {
+            DirectoryInfo? projectDirectory = null;
+            var projectWithReadMe = @"<Project Sdk=""Microsoft.NET.Sdk"">
+    <PropertyGroup>
+        <TargetFramework>net461</TargetFramework>
+        <Authors>TonyHUK</Authors>
+        <RepositoryUrl>https://github.com/tonyhallett/arepo.git</RepositoryUrl>
+        <PackageReadmeFile>package-readme.md</PackageReadmeFile>
+        <PackageProjectUrl>https://github.com/tonyhallett/arepo</PackageProjectUrl>
+        <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+        <IsPackable>True</IsPackable>
+     </PropertyGroup>
+     <ItemGroup>
+
+     </ItemGroup>
+</Project>
+"; // todo
+
+            var relativeReadme = @"
+Before
+![image](images/image.png)
+After
+# Nuget replaced
+";
+
+            var expectedNuGetReadme = @"
+Before
+![image](https://raw.githubusercontent.com/tonyhallett/arepo/master/images/image.png)
+After
+";
+
+            var nuPkgPath = GetNuPkgPath();
+            _nugetBuildTargetsTestSetup.Setup(
+                projectWithReadMe,
+                nuPkgPath,
+                (projectPath) =>
+                {
+                    projectDirectory = new DirectoryInfo(Path.GetDirectoryName(projectPath)!);
+                    CreateRelativeReadmeFile(projectDirectory, relativeReadme);
+                });
+
+            if (projectDirectory == null) throw new Exception("Project directory not set");
+
+            var dependentNuGetReadMe = GetDependentNuGetReadMe(projectDirectory!, "package-readme.md");
+
+            Assert.That(dependentNuGetReadMe, Is.EqualTo(expectedNuGetReadme));
+
+        }
+
         private static string GetDependentNuGetReadMe(DirectoryInfo directoryInfo, string readMeFileName)
         {
             var dependentNuGetPath = GetDependentNuGetPath(directoryInfo);
