@@ -1,24 +1,52 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.Build.Framework;
+using NugetReadmeGithubRelativeToRaw.MSBuildHelpers;
 using NugetReadmeGithubRelativeToRaw.Rewriter;
 
 namespace NugetReadmeGithubRelativeToRaw
 {
     internal class RemoveReplaceSettingsProvider : IRemoveReplaceSettingsProvider
     {
-        internal const string NumPartsError = "RemoveCommentIdentifiers must have two semicolon delimited values: start and end.";
-        internal const string EmptyPartsError = "RemoveCommentIdentifiers must have non-empty start and end values.";
-        internal const string SamePartsError = "RemoveCommentIdentifiers must have different start to end";
-        
-        private readonly IIOHelper _ioHelper;
+        internal const string RequiredMetadataErrorFormat = "{0} metadata is required on RemoveReplace item '{1}'.";
+        internal const string UnsupportedCommentOrRegexMetadataErrorFormat = "CommentOrRegex metadata on RemoveReplace item '{0}' should be {1} or {2}.";
 
-        public RemoveReplaceSettingsProvider(IIOHelper ioHelper) => _ioHelper = ioHelper;
+        private readonly IIOHelper _ioHelper;
+        private readonly IMSBuildMetadataProvider _msBuildMetadataProvider;
+        private readonly IRemoveCommentsIdentifiersParser _removeCommentsIdentifiersParser;
+
+        private sealed class MetadataItem
+        {
+            public MetadataItem(RemoveReplaceMetadata removeReplaceMetadata, ITaskItem taskItem)
+            {
+                Metadata = removeReplaceMetadata;
+                TaskItem = taskItem;
+            }
+
+            public RemoveReplaceMetadata Metadata { get; }
+            public ITaskItem TaskItem { get; }
+        }
+
+        public RemoveReplaceSettingsProvider(
+            IIOHelper ioHelper, 
+            IMSBuildMetadataProvider msBuildMetadataProvider,
+            IRemoveCommentsIdentifiersParser removeCommentsIdentifiersParser
+            )
+        {
+            _ioHelper = ioHelper;
+            _msBuildMetadataProvider = msBuildMetadataProvider;
+            _removeCommentsIdentifiersParser = removeCommentsIdentifiersParser;
+        }
 
         public IRemoveReplaceSettingsResult Provide(ITaskItem[]? removeReplaceItems, string? removeCommentIdentifiers)
         {
             var errors = new List<string>();
-            var parsedRemoveCommentIdentifiers = ParseRemoveCommentIdentifiers(removeCommentIdentifiers, errors);
+            var parsedRemoveCommentIdentifiers = _removeCommentsIdentifiersParser.Parse(removeCommentIdentifiers, errors);
+            if (errors.Count > 0)
+            {
+                return new RemoveReplaceSettingsResult(null, errors);
+            }
+
             var removalOrReplacements = CreateRemovalOrReplacements(removeReplaceItems, errors);
             if (parsedRemoveCommentIdentifiers == null && removalOrReplacements.Count == 0)
             {
@@ -36,23 +64,28 @@ namespace NugetReadmeGithubRelativeToRaw
                 return removalReplacements;
             }
 
-            var initialErrorsCount = errors.Count;
-            foreach(var removeReplaceItem in removeReplaceItems)
+            List<MetadataItem>? metadataItems = GetMetadataItems(removeReplaceItems, errors);
+            if (metadataItems == null)
             {
-                var replacementText = GetReplacementTextFromItem(removeReplaceItem);
-                var commentOrRegex = GetCommentOrRegexFromMetadata(removeReplaceItem, errors);
+                return removalReplacements;
+            }
+            
+            var initialErrorsCount = errors.Count;
+            foreach (var metadataItem in metadataItems)
+            {
+                var replacementText = GetReplacementTextFromItem(metadataItem);
+                var commentOrRegex = TryParseCommentOrRegex(metadataItem, errors);
                 if (!commentOrRegex.HasValue)
                 {
                     break;
                 }
 
-                var startEnd = GetStartEndMetadata(removeReplaceItem, errors);
-                if(startEnd == null)
+                var startEnd = GetStartEnd(metadataItem, errors);
+                if (startEnd == null)
                 {
                     break;
                 }
-                var (start, endRaw) = startEnd.Value;
-                var end = endRaw == string.Empty ? null : endRaw;
+                var (start, end) = startEnd.Value;
                 removalReplacements.Add(
                     new RemovalOrReplacement(
                         commentOrRegex.Value,
@@ -69,92 +102,77 @@ namespace NugetReadmeGithubRelativeToRaw
             return removalReplacements;
         }
 
-        private string? GetReplacementTextFromMetadata(ITaskItem removeReplaceItem)
-            => removeReplaceItem.GetMetadata(RemoveReplaceSettingsMetadataNames.ReplacementText);
 
-        private string? GetReplacementTextFromItem(ITaskItem removeReplaceItem)
+        private List<MetadataItem>? GetMetadataItems(ITaskItem[] removeReplaceItems, List<string> errors)
         {
-            var replacementText = GetReplacementTextFromMetadata(removeReplaceItem);
-            if (replacementText == null)
+            List<MetadataItem> metadataItems = new List<MetadataItem>();
+            foreach (var removeReplaceItem in removeReplaceItems)
             {
-                if (_ioHelper.FileExists(removeReplaceItem.ItemSpec))
+                var metadata = _msBuildMetadataProvider.GetCustomMetadata<RemoveReplaceMetadata>(removeReplaceItem);
+                if (metadata.MissingMetadataNames.Count > 0)
                 {
-                    replacementText = _ioHelper.ReadAllText(removeReplaceItem.ItemSpec);
+                    foreach (var missingMetadataName in metadata.MissingMetadataNames)
+                    {
+                        AddFormatError(errors, RequiredMetadataErrorFormat, missingMetadataName, removeReplaceItem.ItemSpec);
+                    }
+                    return null;
                 }
-                // if is removal then does not need to exist
+                metadataItems.Add(new MetadataItem(metadata, removeReplaceItem));
+            }
+
+            return metadataItems;
+        }
+
+
+        private string? GetReplacementTextFromItem(MetadataItem metadataItem)
+        {
+            var replacementText = metadataItem.Metadata.ReplacementText;
+            if (string.IsNullOrEmpty(replacementText))
+            {
+                replacementText = TryReadReplacementFile(metadataItem.TaskItem);
             }
             return replacementText;
         }
 
-        private string? GetCommentOrRegexFromMetadata(ITaskItem removeReplaceItem)
-            => removeReplaceItem.GetMetadata(RemoveReplaceSettingsMetadataNames.CommentOrRegex);
-
-        private CommentOrRegex? GetCommentOrRegexFromMetadata(ITaskItem removeReplaceItem, List<string> errors)
+        // if is removal then does not need to exist
+        private string? TryReadReplacementFile(ITaskItem removeReplaceItem)
         {
-            var commentOrRegexStr = GetCommentOrRegexFromMetadata(removeReplaceItem);
-            if (commentOrRegexStr == null || commentOrRegexStr == string.Empty)
+            string? replacementText = null;
+            var fullPath = removeReplaceItem.GetFullPath();
+            if (_ioHelper.FileExists(fullPath))
             {
-                errors.Add($"CommentOrRegex metadata is required on RemoveReplace item '{removeReplaceItem.ItemSpec}'.");
-                return null;
+                replacementText = _ioHelper.ReadAllText(fullPath);
             }
+            return replacementText;
+        }
 
-            if (!Enum.TryParse<CommentOrRegex>(commentOrRegexStr, out var commentOrRegex))
+        private CommentOrRegex? TryParseCommentOrRegex(MetadataItem metadataItem, List<string> errors)
+        {
+            if (!Enum.TryParse<CommentOrRegex>(metadataItem.Metadata.CommentOrRegex, out var commentOrRegex))
             {
-                errors.Add($"CommentOrRegex metadata on RemoveReplace item '{removeReplaceItem.ItemSpec}' should be {nameof(CommentOrRegex.Comment)} or {nameof(CommentOrRegex.Regex)}.");
+                AddFormatError(errors, UnsupportedCommentOrRegexMetadataErrorFormat, metadataItem.TaskItem.ItemSpec, nameof(CommentOrRegex.Comment), nameof(CommentOrRegex.Regex));
                 return null;
             }
             return commentOrRegex;
         }
 
-        private string? GetStartFromMetadata(ITaskItem removeReplaceItem) => removeReplaceItem.GetMetadata(RemoveReplaceSettingsMetadataNames.Start);
-        
-        private (string Start,string? End)? GetStartEndMetadata(ITaskItem removeReplaceItem, List<string> errors)
+        private (string Start,string? End)? GetStartEnd(MetadataItem metadataItem, List<string> errors)
         {
-            var start = GetStartFromMetadata(removeReplaceItem);
-            if (start == null || start == string.Empty)
-            {
-                errors.Add($"Start metadata is required on RemoveReplace item '{removeReplaceItem.ItemSpec}'.");
-                return null;
-            }
-            var end = removeReplaceItem.GetMetadata(RemoveReplaceSettingsMetadataNames.End);
+            var start = metadataItem.Metadata.Start!;
+            var endRaw = metadataItem.Metadata.End;
+            var end = endRaw == string.Empty ? null : endRaw;
             if (start == end)
             {
-                errors.Add($"If End metadata is specified on RemoveReplace item '{removeReplaceItem.ItemSpec}' it must be different to Start.");
+                errors.Add($"If End metadata is specified on RemoveReplace item '{metadataItem.TaskItem.ItemSpec}' it must be different to Start.");
                 return null;
             }
 
             return (start, end);
         }
 
-        private RemoveCommentIdentifiers? ParseRemoveCommentIdentifiers(string? removeCommentIdentifiers, List<string> errors)
-        {
-            if (string.IsNullOrWhiteSpace(removeCommentIdentifiers))
-            {
-                return null;
-            }
-         
-            var parts = removeCommentIdentifiers!.Split(';');
-            if (parts.Length != 2)
-            {
-                errors.Add(NumPartsError);
-                return null;
-            }
-            
-            var start = parts[0].Trim();
-            var end = parts[1].Trim();
-            if (string.IsNullOrEmpty(start) || string.IsNullOrEmpty(end))
-            {
-                errors.Add(EmptyPartsError);
-                return null;
-            }
-            
-            if(start == end)
-            {
-                errors.Add(SamePartsError);
-                return null;
-            }
-            
-            return new RemoveCommentIdentifiers(start, end);
-        }
+
+
+        private void AddFormatError(List<string> errors, string format, params string[] args)
+            => errors.Add(string.Format(format, args));
     }
 }

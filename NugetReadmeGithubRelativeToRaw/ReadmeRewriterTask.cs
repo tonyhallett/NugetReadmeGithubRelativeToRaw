@@ -1,11 +1,18 @@
 ﻿using System;
 using Microsoft.Build.Framework;
+using NugetReadmeGithubRelativeToRaw.MSBuildHelpers;
 using NugetReadmeGithubRelativeToRaw.Rewriter;
 
 namespace NugetReadmeGithubRelativeToRaw
 {
     public class ReadmeRewriterTask : Microsoft.Build.Utilities.Task
     {
+        internal const string UnsupportedImageDomainErrorFormat = "Unsupported image domain found in README: {0}";
+        internal const string ReadmeFileDoesNotExistErrorFormat = "Readme file does not exist: {0}";
+        internal const string CouldNotParseRepositoryUrlErrorFormat = "Could not parse the {0}: {1}";
+        internal const RewriteTagsOptions DefaultRewriteTagsOptions = Rewriter.RewriteTagsOptions.All;
+        internal const string CouldNotParseRewriteTagsOptionsWarningFormat = "Could not parse the {0}: {1}. Using the default: {2}";
+
         [Required]
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
         public string ProjectDirectoryPath { get; set; }
@@ -29,7 +36,7 @@ namespace NugetReadmeGithubRelativeToRaw
 
         internal IReadmeRewriter ReadmeRewriter { get; set; } = new ReadmeRewriter();
 
-        internal IRemoveReplaceSettingsProvider RemoveReplaceSettingsProvider { get; set; } = new RemoveReplaceSettingsProvider(new IOHelper());
+        internal IRemoveReplaceSettingsProvider RemoveReplaceSettingsProvider { get; set; } = new RemoveReplaceSettingsProvider(new IOHelper(), new MSBuildMetadataProvider(), new RemoveCommentsIdentifiersParser());
 
         public override bool Execute()
         {
@@ -37,7 +44,7 @@ namespace NugetReadmeGithubRelativeToRaw
             var readmePath = IOHelper.CombinePaths(ProjectDirectoryPath, readmeRelativePath);
             if (!IOHelper.FileExists(readmePath))
             {
-                Log.LogError("Readme file does not exist: " + readmePath);
+                LogFormatError(ReadmeFileDoesNotExistErrorFormat, readmePath);
             }
             else
             {
@@ -73,18 +80,22 @@ namespace NugetReadmeGithubRelativeToRaw
             }
             else
             {
-                Log.LogError("Could not parse the RepositoryUrl: " + RepositoryUrl);
+                LogFormatError(CouldNotParseRepositoryUrlErrorFormat, nameof(RepositoryUrl), RepositoryUrl);
             }
         }
 
         private RewriteTagsOptions GetRewriteTagsOptions()
         {
-            var options = Rewriter.RewriteTagsOptions.All;
-            if(RewriteTagsOptions != null)
+            var options = DefaultRewriteTagsOptions;
+            if (RewriteTagsOptions != null)
             {
-                if(!Enum.TryParse(RewriteTagsOptions, out options))
+                if(Enum.TryParse(RewriteTagsOptions, out RewriteTagsOptions parsedOptions))
                 {
-                    Log.LogWarning("Could not parse the RewriteTagsOptions: " + RewriteTagsOptions + ". Using the default: " + options);
+                    options = parsedOptions;
+                }
+                else
+                {
+                    LogFormatWarning(CouldNotParseRewriteTagsOptionsWarningFormat, nameof(RewriteTagsOptions), RewriteTagsOptions, DefaultRewriteTagsOptions.ToString());
                 }
             }
             return options;
@@ -96,7 +107,7 @@ namespace NugetReadmeGithubRelativeToRaw
             {
                 foreach (var unsupportedImageDomain in readmeRewriterResult.UnsupportedImageDomains)
                 {
-                    Log.LogError("Unsupported image domain found in README: " + unsupportedImageDomain);
+                    LogFormatError(UnsupportedImageDomainErrorFormat, unsupportedImageDomain);
                 }
             }
             else
@@ -104,5 +115,16 @@ namespace NugetReadmeGithubRelativeToRaw
                 IOHelper.WriteAllText(OutputReadme, readmeRewriterResult.RewrittenReadme);
             }
         }
+
+        private void LogFormatError(string format, params string[] args)
+        {
+            Log.LogError(string.Format(format, args));
+        }
+
+        private void LogFormatWarning(string format, params string[] args)
+        {
+            Log.LogWarning(string.Format(format, args));
+        }
+
     }
 }

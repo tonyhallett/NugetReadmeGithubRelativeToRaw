@@ -20,20 +20,6 @@ namespace IntegrationTests
         [Test]
         public void Should_Have_Correct_ReadMe_In_Generated_NuPkg()
         {
-            DirectoryInfo? projectDirectory = null;
-            var projectWithReadMe = @"<Project Sdk=""Microsoft.NET.Sdk"">
-    <PropertyGroup>
-        <TargetFramework>net461</TargetFramework>
-        <Authors>TonyHUK</Authors>
-        <RepositoryUrl>https://github.com/tonyhallett/arepo.git</RepositoryUrl>
-        <PackageReadmeFile>package-readme.md</PackageReadmeFile>
-        <PackageProjectUrl>https://github.com/tonyhallett/arepo</PackageProjectUrl>
-        <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-        <IsPackable>True</IsPackable>
-     </PropertyGroup>
-</Project>
-"; // todo
-
             var relativeReadme = @"
 Before
 ![image](images/image.png)
@@ -45,23 +31,8 @@ Before
 ![image](https://raw.githubusercontent.com/tonyhallett/arepo/master/images/image.png)
 After
 ";
-            
-            var nuPkgPath = GetNuPkgPath();
-            _nugetBuildTargetsTestSetup.Setup(
-                projectWithReadMe,
-                nuPkgPath,
-                (projectPath) =>
-                {
-                    projectDirectory = new DirectoryInfo(Path.GetDirectoryName(projectPath)!);
-                    CreateRelativeReadmeFile(projectDirectory, relativeReadme);
-                });
 
-            if (projectDirectory == null) throw new Exception("Project directory not set");
-
-            var dependentNuGetReadMe = GetDependentNuGetReadMe(projectDirectory!, "package-readme.md");
-
-            Assert.That(dependentNuGetReadMe, Is.EqualTo(expectedNuGetReadme));
-            
+            Test(relativeReadme, expectedNuGetReadme);
         }
 
         [Test]
@@ -70,27 +41,12 @@ After
             var replace = "# Replace";
             var replacement = "Nuget only";
 
-            DirectoryInfo? projectDirectory = null;
-            var projectWithReadMe = @$"<Project Sdk=""Microsoft.NET.Sdk"">
-    <PropertyGroup>
-        <TargetFramework>net461</TargetFramework>
-        <Authors>TonyHUK</Authors>
-        <RepositoryUrl>https://github.com/tonyhallett/arepo.git</RepositoryUrl>
-        <PackageReadmeFile>package-readme.md</PackageReadmeFile>
-        <PackageProjectUrl>https://github.com/tonyhallett/arepo</PackageProjectUrl>
-        <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-        <IsPackable>True</IsPackable>
-     </PropertyGroup>
-     <ItemGroup>
+            var removeReplaceItems = @$"
         <RemoveReplaceItem Include=""1"">
-            {CreateMetadataElement(RemoveReplaceSettingsMetadataNames.Start, replace)}
-            {CreateMetadataElement(RemoveReplaceSettingsMetadataNames.CommentOrRegex,nameof(CommentOrRegex.Regex))}
-            {CreateMetadataElement(RemoveReplaceSettingsMetadataNames.ReplacementText, replacement)}
-            <ReplacementText>Nuget only</ReplacementText>
-        </RemoveReplaceItem>
-     </ItemGroup>
-</Project>
-"; // todo
+            {CreateMetadataElement(nameof(RemoveReplaceMetadata.Start), replace)}
+            {CreateMetadataElement(nameof(RemoveReplaceMetadata.CommentOrRegex), nameof(CommentOrRegex.Regex))}
+            {CreateMetadataElement(nameof(RemoveReplaceMetadata.ReplacementText), replacement)}
+        </RemoveReplaceItem>";
 
             var relativeReadme = @$"
 Before
@@ -102,6 +58,60 @@ This will be replaced
 Before
 {replacement}";
 
+            Test(relativeReadme, expectedNuGetReadme, removeReplaceItems);
+
+        }
+
+        [Test]
+        public void Should_Have_Correct_Replaced_To_End_From_File_Readme_In_Generated_NuPkg()
+        {
+            var replace = "# Replace";
+            var replacement = "Nuget only file replace";
+
+            var removeReplaceItems = @$"
+        <RemoveReplaceItem Include=""replace.txt"">
+            {CreateMetadataElement(nameof(RemoveReplaceMetadata.Start), replace)}
+            {CreateMetadataElement(nameof(RemoveReplaceMetadata.CommentOrRegex), nameof(CommentOrRegex.Regex))}
+            {CreateMetadataElement(nameof(RemoveReplaceMetadata.ReplacementText), replacement)}
+        </RemoveReplaceItem>";
+
+            var relativeReadme = @$"
+Before
+{replace}
+This will be replaced
+";
+
+            var expectedNuGetReadme = @$"
+Before
+{replacement}";
+
+            Test(relativeReadme, expectedNuGetReadme, removeReplaceItems,"",addRelativeFile => addRelativeFile("relative.text",replacement));
+
+        }
+
+
+
+
+        private void Test(string relativeReadme, string expectedNuGetReadme, string removeReplaceItems = "",string additionalProperties = "", Action<Action<string, string>>? addRelativeFileCallback = null)
+        {
+            DirectoryInfo? projectDirectory = null;
+            var projectWithReadMe = @$"<Project Sdk=""Microsoft.NET.Sdk"">
+    <PropertyGroup>
+        <TargetFramework>net461</TargetFramework>
+        <Authors>TonyHUK</Authors>
+        <RepositoryUrl>https://github.com/tonyhallett/arepo.git</RepositoryUrl>
+        <PackageReadmeFile>package-readme.md</PackageReadmeFile>
+        <PackageProjectUrl>https://github.com/tonyhallett/arepo</PackageProjectUrl>
+        <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+        <IsPackable>True</IsPackable>
+{additionalProperties}
+     </PropertyGroup>
+     <ItemGroup>
+{removeReplaceItems}
+     </ItemGroup>
+</Project>
+"; // todo
+
             var nuPkgPath = GetNuPkgPath();
             _nugetBuildTargetsTestSetup.Setup(
                 projectWithReadMe,
@@ -109,7 +119,10 @@ Before
                 (projectPath) =>
                 {
                     projectDirectory = new DirectoryInfo(Path.GetDirectoryName(projectPath)!);
-                    CreateRelativeReadmeFile(projectDirectory, relativeReadme);
+                    Action<string, string> createRelativeFile = (fileName,contents) => File.WriteAllText(Path.Combine(projectDirectory.FullName, fileName), contents);
+                    createRelativeFile("readme.md", relativeReadme);
+                    addRelativeFileCallback?.Invoke(createRelativeFile);
+
                 });
 
             if (projectDirectory == null) throw new Exception("Project directory not set");
@@ -117,7 +130,6 @@ Before
             var dependentNuGetReadMe = GetDependentNuGetReadMe(projectDirectory!, "package-readme.md");
 
             Assert.That(dependentNuGetReadMe, Is.EqualTo(expectedNuGetReadme));
-
         }
 
         private static string CreateMetadataElement(string metadataName, string contents)
@@ -136,9 +148,6 @@ Before
         }
 
         private static string GetDependentNuGetPath(DirectoryInfo directoryInfo) => directoryInfo.GetFiles("*.nupkg", SearchOption.AllDirectories).First().FullName;
-
-        private static void CreateRelativeReadmeFile(DirectoryInfo projectDirectory, string readMe)
-            => File.WriteAllText(Path.Combine(projectDirectory.FullName, "readme.md"), readMe);
 
         private static string GetNuPkgPath() => GetProjectDirectory().GetFiles("*.nupkg", SearchOption.AllDirectories).First().FullName;
 

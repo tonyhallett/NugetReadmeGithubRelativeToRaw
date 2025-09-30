@@ -9,7 +9,6 @@ namespace UnitTests
         [SetUp]
         public void Setup() => _readmeRewriter = new ReadmeRewriter();
 
-
         protected ReadmeRewriterResult RewriteUserRepoMainReadMe(string readmeContent, RewriteTagsOptions rewriteTagsOptions = RewriteTagsOptions.All, RemoveReplaceSettings? removeReplaceSettings = null)
         {
             var repoUrl = CreateRepositoryUrl("username", "reponame");

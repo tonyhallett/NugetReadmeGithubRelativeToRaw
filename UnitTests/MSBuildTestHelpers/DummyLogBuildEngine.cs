@@ -1,29 +1,29 @@
 ﻿using System.Collections;
 using Microsoft.Build.Framework;
 
-namespace UnitTests
+namespace UnitTests.MSBuildTestHelpers
 {
     internal class DummyLogBuildEngine : IBuildEngine5
     {
-        public class TelemetryLog
+        public class TelemetryLog(string eventName, IDictionary<string, string> properties)
         {
-            public TelemetryLog(string eventName, IDictionary<string, string> properties)
-            {
-                EventName = eventName;
-                Properties = properties;
-            }
-            public string EventName { get; }
-            public IDictionary<string, string> Properties { get; }
+            public string EventName { get; } = eventName;
+            public IDictionary<string, string> Properties { get; } = properties;
         }
 
         public bool IsRunningMultipleNodes { get; set; }
+
         public bool ContinueOnError { get; set; }
+        
         public int LineNumberOfTaskNode { get; set; }
+        
         public int ColumnNumberOfTaskNode { get; set; }
+        
         public string? ProjectFileOfTaskNode { get; set; }
 
-        public List<BuildEventArgs> LoggedEvents { get; } = new List<BuildEventArgs>();
-        public List<TelemetryLog> LoggedTelemetry { get; } = new List<TelemetryLog>();
+        public List<BuildEventArgs> LoggedEvents { get; } = [];
+
+        public List<TelemetryLog> LoggedTelemetry { get; } = [];
 
         #region not implemented
         public bool BuildProjectFile(string projectFileName, string[] targetNames, IDictionary globalProperties, IDictionary targetOutputs, string toolsVersion)

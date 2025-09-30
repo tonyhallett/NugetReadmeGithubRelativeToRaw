@@ -2,6 +2,7 @@
 using Moq;
 using NugetReadmeGithubRelativeToRaw;
 using NugetReadmeGithubRelativeToRaw.Rewriter;
+using UnitTests.MSBuildTestHelpers;
 
 namespace UnitTests
 {
@@ -105,9 +106,13 @@ namespace UnitTests
         {
             var result = _readmeRewriterTask.Execute();
 
-            Assert.That(result, Is.EqualTo(false));
-            var errorMessage = _dummyLogBuildEngine.LoggedEvents.OfType<BuildErrorEventArgs>().First().Message;
-            Assert.That(errorMessage, Is.EqualTo("Readme file does not exist: projectdir;readme.md"));
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.EqualTo(false));
+                Assert.That(
+                    _dummyLogBuildEngine.SingleErrorMessage(), 
+                    Is.EqualTo(string.Format(ReadmeRewriterTask.ReadmeFileDoesNotExistErrorFormat,"projectdir;readme.md")));
+            });
         }
 
         private bool ExecuteReadmeExists()
@@ -131,8 +136,9 @@ namespace UnitTests
             var result = ExecuteReadmeExists();
 
             Assert.That(result, Is.EqualTo(false));
-            var errorMessage = _dummyLogBuildEngine.LoggedEvents.OfType<BuildErrorEventArgs>().First().Message;
-            Assert.That(errorMessage, Is.EqualTo("Could not parse the RepositoryUrl: " + repositoryUrl));
+            Assert.That(
+                _dummyLogBuildEngine.SingleErrorMessage(), 
+                Is.EqualTo(string.Format(ReadmeRewriterTask.CouldNotParseRepositoryUrlErrorFormat,nameof(ReadmeRewriterTask.RepositoryUrl), repositoryUrl)));
         }
 
         [Test]
@@ -148,12 +154,15 @@ namespace UnitTests
                 It.IsAny<RemoveReplaceSettings>())).Returns(readmeRewriterResult);
 
             var result = ExecuteReadmeExists();
-            Assert.That(result, Is.EqualTo(false));
 
-            foreach (var unsupportedImageDomain in readmeRewriterResult.UnsupportedImageDomains)
+            Assert.Multiple(() =>
             {
-                Assert.That(_dummyLogBuildEngine.LoggedEvents.OfType<BuildErrorEventArgs>().Any(loggedEvent => loggedEvent.Message.Contains(unsupportedImageDomain)), Is.True);
-            }
+                Assert.That(result, Is.EqualTo(false));
+                foreach (var (unsupportedImageDomain, error) in readmeRewriterResult.UnsupportedImageDomains.Zip(_dummyLogBuildEngine.ErrorMessages()))
+                {
+                    Assert.That(error, Is.EqualTo(string.Format(ReadmeRewriterTask.UnsupportedImageDomainErrorFormat, unsupportedImageDomain)));
+                }
+            });
         }
 
         [Test]
@@ -191,17 +200,20 @@ namespace UnitTests
 
             _mockReadmeRewriter.Verify(readmeRewriter => readmeRewriter.Rewrite(It.IsAny<string>(), It.IsAny<string>(), repositoryUrl, repositoryBranch, expectedRewriteTagsOptions, It.IsAny<RemoveReplaceSettings>()));
 
-            if(expectsLogsWarning)
+            if (expectsLogsWarning)
             {
-                var warningMessage = _dummyLogBuildEngine.LoggedEvents.OfType<BuildWarningEventArgs>().First().Message;
-                Assert.That(warningMessage, Is.EqualTo($"Could not parse the RewriteTagsOptions: {rewriteTagsOptionsMSBuild}. Using the default: {nameof(RewriteTagsOptions.All)}"));
+                Assert.That(
+                    _dummyLogBuildEngine.SingleWarningMessage(), 
+                    Is.EqualTo(string.Format(
+                        ReadmeRewriterTask.CouldNotParseRewriteTagsOptionsWarningFormat,
+                        nameof(ReadmeRewriterTask.RewriteTagsOptions),
+                        rewriteTagsOptionsMSBuild, 
+                        ReadmeRewriterTask.DefaultRewriteTagsOptions)));
             }
             else
             {
-                Assert.That(_dummyLogBuildEngine.LoggedEvents.OfType<BuildWarningEventArgs>().Any(), Is.False);
+                Assert.That(_dummyLogBuildEngine.HasEvents<BuildWarningEventArgs>(), Is.False);
             }
         }
-
-
     }
 }

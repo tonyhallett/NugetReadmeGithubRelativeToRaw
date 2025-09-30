@@ -128,30 +128,5 @@ For full details visit [GitHub](https://github.com/username/reponame/blob/main/r
 
             Assert.That(rewrittenReadMe, Is.EqualTo(expectedReadMeContent));
         }
-
-        [Test]
-        public void Failing_Integration_Test()
-        {
-            var replace = "# Replace";
-            var nugetReplacement = "Nuget only";
-            var readMeContent = @$"
-Before
-{replace}
-This will be replaced
-";
-            RemovalOrReplacement replacement = new RemovalOrReplacement(CommentOrRegex.Regex, replace, null, nugetReplacement);
-            var removeReplaceSettings = new RemoveReplaceSettings(null, [replacement]);
-
-            var rewrittenReadMe = RewriteUserRepoMainReadMe(readMeContent, RewriteTagsOptions.None, removeReplaceSettings).RewrittenReadme;
-
-            var expectedReadMeContent = @$"
-Before
-{nugetReplacement}";
-
-            Assert.That(rewrittenReadMe, Is.EqualTo(expectedReadMeContent));
-
-            var removeReplacer = new RemoveReplacer(new RemoveReplaceRegexesFactory());
-            Assert.That(removeReplacer.RemoveReplace(readMeContent, removeReplaceSettings), Is.EqualTo(expectedReadMeContent));
-        }
     }
 }

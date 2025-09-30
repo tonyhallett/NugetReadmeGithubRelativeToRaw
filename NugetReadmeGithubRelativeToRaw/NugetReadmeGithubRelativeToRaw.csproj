@@ -36,7 +36,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AngleSharp" Version="1.3.0" PrivateAssets="all" />
-    <PackageReference Include="Markdig" Version="0.42.0" PrivateAssets="all"/>
+    <PackageReference Include="Markdig" Version="0.42.0" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.14.8" PrivateAssets="all" ExcludeAssets="Runtime" />
   </ItemGroup>
   <ItemGroup>
@@ -51,25 +51,15 @@
     </AssemblyAttribute>
    </ItemGroup>
 
-   <Target
-    Name="CopyProjectReferencesToPackage"
-    DependsOnTargets="ResolveReferences">
+   <Target Name="CopyProjectReferencesToPackage" DependsOnTargets="ResolveReferences">
         <ItemGroup>
-            <BuildOutputInPackage
-                Include="@(ReferenceCopyLocalPaths)" 
-                TargetPath="%(ReferenceCopyLocalPaths.DestinationSubPath)" />
+            <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths)" TargetPath="%(ReferenceCopyLocalPaths.DestinationSubPath)" />
         </ItemGroup>
     </Target>
     <!-- This target adds the generated deps.json file to our package output -->
-    <Target
-        Name="AddBuildDependencyFileToBuiltProjectOutputGroupOutput"
-        BeforeTargets="BuiltProjectOutputGroup"
-        Condition=" '$(GenerateDependencyFile)' == 'true'">
+    <Target Name="AddBuildDependencyFileToBuiltProjectOutputGroupOutput" BeforeTargets="BuiltProjectOutputGroup" Condition=" '$(GenerateDependencyFile)' == 'true'">
     <ItemGroup>
-        <BuiltProjectOutputGroupOutput
-	        Include="$(ProjectDepsFilePath)"
-	        TargetPath="$(ProjectDepsFileName)"
-	        FinalOutputPath="$(ProjectDepsFilePath)" />
+        <BuiltProjectOutputGroupOutput Include="$(ProjectDepsFilePath)" TargetPath="$(ProjectDepsFileName)" FinalOutputPath="$(ProjectDepsFilePath)" />
     </ItemGroup>
 </Target>
 </Project>
