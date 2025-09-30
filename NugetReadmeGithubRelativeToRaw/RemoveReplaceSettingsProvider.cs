@@ -15,6 +15,17 @@ namespace NugetReadmeGithubRelativeToRaw
         private readonly IMSBuildMetadataProvider _msBuildMetadataProvider;
         private readonly IRemoveCommentsIdentifiersParser _removeCommentsIdentifiersParser;
 
+        private sealed class StartEnd {
+            public StartEnd(string start, string? end)
+            {
+                Start = start;
+                End = end;
+            }
+
+            public string Start { get; }
+            public string? End { get; }
+        }
+
         private sealed class MetadataItem
         {
             public MetadataItem(RemoveReplaceMetadata removeReplaceMetadata, ITaskItem taskItem)
@@ -73,25 +84,21 @@ namespace NugetReadmeGithubRelativeToRaw
             var initialErrorsCount = errors.Count;
             foreach (var metadataItem in metadataItems)
             {
-                var replacementText = GetReplacementTextFromItem(metadataItem);
-                var commentOrRegex = TryParseCommentOrRegex(metadataItem, errors);
-                if (!commentOrRegex.HasValue)
+                if (TryParseCommentOrRegex(metadataItem, errors) is CommentOrRegex commentOrRegex && 
+                    GetStartEnd(metadataItem, errors) is StartEnd startEnd)
+                {
+                    var replacementText = GetReplacementTextFromItem(metadataItem);
+                    removalReplacements.Add(
+                        new RemovalOrReplacement(
+                            commentOrRegex,
+                            startEnd.Start,
+                            startEnd.End,
+                            replacementText));
+                }
+                else
                 {
                     break;
                 }
-
-                var startEnd = GetStartEnd(metadataItem, errors);
-                if (startEnd == null)
-                {
-                    break;
-                }
-                var (start, end) = startEnd.Value;
-                removalReplacements.Add(
-                    new RemovalOrReplacement(
-                        commentOrRegex.Value,
-                        start,
-                        end,
-                        replacementText));
             }
 
             if (errors.Count > initialErrorsCount)
@@ -156,7 +163,7 @@ namespace NugetReadmeGithubRelativeToRaw
             return commentOrRegex;
         }
 
-        private (string Start,string? End)? GetStartEnd(MetadataItem metadataItem, List<string> errors)
+        private StartEnd? GetStartEnd(MetadataItem metadataItem, List<string> errors)
         {
             var start = metadataItem.Metadata.Start!;
             var endRaw = metadataItem.Metadata.End;
@@ -167,7 +174,7 @@ namespace NugetReadmeGithubRelativeToRaw
                 return null;
             }
 
-            return (start, end);
+            return new StartEnd(start, end);
         }
 
 
