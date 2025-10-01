@@ -5,9 +5,9 @@ namespace NugetReadmeGithubRelativeToRaw
 {
     internal class RemoveCommentsIdentifiersParser : IRemoveCommentsIdentifiersParser
     {
-        internal const string NumPartsError = "{0} must have two semicolon delimited values: start and end.";
-        internal const string EmptyPartsError = "{0} must have non-empty start and end values.";
-        internal const string SamePartsError = "{0} must have different start to end";
+        internal const string NumPartsError = "MSBuild Property {0} must have two semicolon delimited values: start and end.";
+        internal const string EmptyPartsError = "MSBuild Property {0} must have non-empty start and end values.";
+        internal const string SamePartsError = "MSBuild Property {0} must have different start to end";
 
         public RemoveCommentIdentifiers? Parse(string? removeCommentIdentifiers, List<string> errors)
         {
