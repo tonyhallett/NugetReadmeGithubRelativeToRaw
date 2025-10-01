@@ -5,6 +5,6 @@ namespace NugetReadmeGithubRelativeToRaw
 {
     internal interface IRemovalOrReplacementProvider
     {
-        RemovalOrReplacement? Provide(MetadataItem metadataItem, List<string> errors);
+        RemovalOrReplacement? Provide(MetadataItem metadataItem, IAddError addError);
     }
 }

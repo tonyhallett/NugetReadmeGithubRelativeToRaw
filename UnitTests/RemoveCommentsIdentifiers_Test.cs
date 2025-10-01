@@ -1,34 +1,86 @@
 ﻿using NugetReadmeGithubRelativeToRaw;
+using NugetReadmeGithubRelativeToRaw.Rewriter;
 
 namespace UnitTests
 {
     internal class RemoveCommentsIdentifiers_Test
     {
-        [TestCase("start", RemoveCommentsIdentifiersParser.NumPartsError)]
-        [TestCase("start;end;", RemoveCommentsIdentifiersParser.NumPartsError)]
-        [TestCase("same;same", RemoveCommentsIdentifiersParser.SamePartsError)]
-        [TestCase(" ;end", RemoveCommentsIdentifiersParser.EmptyPartsError)]
-        public void Should_Have_Error_For_Invalid_RemoveCommentIdentifiers(string removeCommentIdentifiersMsBuild, string expectedErrorFormat)
-        {
-            var expectedError = string.Format(expectedErrorFormat, nameof(ReadmeRewriterTask.RemoveCommentIdentifiers));
-            var removeCommentIdentifiersParser = new RemoveCommentsIdentifiersParser();
-            var errors = new List<string>();
-            var parsed = removeCommentIdentifiersParser.Parse(removeCommentIdentifiersMsBuild, errors);
+        private RemoveCommentsIdentifiersParser _removeCommentsIdentifiersParser;
 
-            Assert.That(parsed, Is.Null);
-            Assert.That(errors!.Single(), Is.EqualTo(expectedError));
+        private sealed class RemoveCommentsMessageProvider : IMessageProvider
+        {
+            public const string FormatError = "formaterror";
+            public const string SameStartEndError = "samestartenderror";
+
+            public string CouldNotParseRepositoryUrl(string url)
+            {
+                throw new NotImplementedException();
+            }
+
+            public string CouldNotParseRewriteTagsOptionsUsingDefault(string propertyValue, RewriteTagsOptions defaultRewriteTagsOptions)
+            {
+                throw new NotImplementedException();
+            }
+
+            public string ReadmeFileDoesNotExist(string readmeFilePath)
+            {
+                throw new NotImplementedException();
+            }
+
+            public string RemoveCommentsIdentifiersFormat() => FormatError;
+
+            public string RemoveCommentsIdentifiersSameStartEnd() => SameStartEndError;
+
+            public string RequiredMetadata(string metadataName, string itemSpec)
+            {
+                throw new NotImplementedException();
+            }
+
+            public string UnsupportedCommentOrRegex(string itemSpec)
+            {
+                throw new NotImplementedException();
+            }
+
+            public string UnsupportedImageDomain(string imageDomain)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+
+        [SetUp]
+        public void SetUp()
+        {
+            _removeCommentsIdentifiersParser = new RemoveCommentsIdentifiersParser(new RemoveCommentsMessageProvider());
+        }
+
+
+        [TestCase("start", true)]
+        [TestCase("start;end;", true)]
+        [TestCase("same;same", false)]
+        [TestCase(" ;end", true)]
+        public void Should_Have_Error_For_Invalid_RemoveCommentIdentifiers(string removeCommentIdentifiersMsBuild, bool isFormatError)
+        {
+            var expectedError = isFormatError ? RemoveCommentsMessageProvider.FormatError : RemoveCommentsMessageProvider.SameStartEndError;
+            var addError = new CollectingAddError();
+            var parsed = _removeCommentsIdentifiersParser.Parse(removeCommentIdentifiersMsBuild, addError);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(parsed, Is.Null);
+                Assert.That(addError.Single(), Is.EqualTo(expectedError));
+            });
         }
 
         [Test]
         public void Should_Parse_Valid_RemoveCommentIdentifiers()
         {
             var removeCommentIdentifiersMsBuild = " start ; end ";
-            var removeCommentIdentifiersParser = new RemoveCommentsIdentifiersParser();
-            var errors = new List<string>();
-            var removeCommentIdentifiers = removeCommentIdentifiersParser.Parse(removeCommentIdentifiersMsBuild, errors);
+            var addError = new CollectingAddError();
+            var removeCommentIdentifiers = _removeCommentsIdentifiersParser.Parse(removeCommentIdentifiersMsBuild, addError);
             Assert.Multiple(() =>
             {
-                Assert.That(errors, Is.Empty);
+                Assert.That(addError.Errors, Is.Empty);
                 Assert.That(removeCommentIdentifiers!.Start, Is.EqualTo("start"));
                 Assert.That(removeCommentIdentifiers.End, Is.EqualTo("end"));
             });

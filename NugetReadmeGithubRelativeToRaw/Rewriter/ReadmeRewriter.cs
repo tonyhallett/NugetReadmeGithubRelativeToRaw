@@ -51,7 +51,6 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
             RewriteTagsOptions rewriteTagsOptions = RewriteTagsOptions.All,
             RemoveReplaceSettings? removeReplaceSettings = null)
         {
-
             OwnerRepoRefReadmePath? ownerRepoRefReadmePath = OwnerRepoRefReadmePath.Create(githubRepoUrl, githubRef, readmeRelativePath);
             if (ownerRepoRefReadmePath == null)
             {

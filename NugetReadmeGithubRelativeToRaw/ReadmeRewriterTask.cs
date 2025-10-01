@@ -8,11 +8,7 @@ namespace NugetReadmeGithubRelativeToRaw
 {
     public class ReadmeRewriterTask : Microsoft.Build.Utilities.Task
     {
-        internal const string UnsupportedImageDomainErrorFormat = "Unsupported image domain found in README: {0}";
-        internal const string ReadmeFileDoesNotExistErrorFormat = "Readme file does not exist: {0}";
-        internal const string CouldNotParseRepositoryUrlErrorFormat = "Could not parse the {0}: {1}";
         internal const RewriteTagsOptions DefaultRewriteTagsOptions = Rewriter.RewriteTagsOptions.All;
-        internal const string CouldNotParseRewriteTagsOptionsWarningFormat = "Could not parse the {0}: {1}. Using the default: {2}";
 
         [Required]
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
@@ -35,13 +31,15 @@ namespace NugetReadmeGithubRelativeToRaw
 
         internal IIOHelper IOHelper { get; set; } = InputOutputHelper.Instance;
 
+        internal IMessageProvider MessageProvider { get; set; } = new MessageProvider();
+
         internal IReadmeRewriter ReadmeRewriter { get; set; } = new ReadmeRewriter();
 
         internal IRemoveReplaceSettingsProvider RemoveReplaceSettingsProvider { get; set; } = new RemoveReplaceSettingsProvider(
             new MSBuildMetadataProvider(), 
-            new RemoveCommentsIdentifiersParser(),
-            new RemovalOrReplacementProvider(InputOutputHelper.Instance, ErrorProvider.Instance),
-            ErrorProvider.Instance
+            new RemoveCommentsIdentifiersParser(NugetReadmeGithubRelativeToRaw.MessageProvider.Instance),
+            new RemovalOrReplacementProvider(InputOutputHelper.Instance, NugetReadmeGithubRelativeToRaw.MessageProvider.Instance),
+            NugetReadmeGithubRelativeToRaw.MessageProvider.Instance
             );
 
         public override bool Execute()
@@ -50,7 +48,7 @@ namespace NugetReadmeGithubRelativeToRaw
             var readmePath = IOHelper.CombinePaths(ProjectDirectoryPath, readmeRelativePath);
             if (!IOHelper.FileExists(readmePath))
             {
-                LogFormatError(ReadmeFileDoesNotExistErrorFormat, readmePath);
+                Log.LogError(MessageProvider.ReadmeFileDoesNotExist(readmePath));
             }
             else
             {
@@ -63,7 +61,7 @@ namespace NugetReadmeGithubRelativeToRaw
         private void TryRewrite(string readmeContents, string readmeRelativePath)
         {
             var removeReplaceSettingsResult = RemoveReplaceSettingsProvider.Provide(RemoveReplaceItems, RemoveCommentIdentifiers);
-            if(removeReplaceSettingsResult.Errors.Count > 0)
+            if (removeReplaceSettingsResult.Errors.Count > 0)
             {
                 foreach(var error in removeReplaceSettingsResult.Errors)
                 {
@@ -79,14 +77,20 @@ namespace NugetReadmeGithubRelativeToRaw
 
         private void Rewrite(string readmeContents, string readmeRelativePath, RemoveReplaceSettings? removeReplaceSettings)
         {
-            var readmeRewriterResult = ReadmeRewriter.Rewrite(readmeContents, readmeRelativePath, RepositoryUrl, RepositoryBranch, GetRewriteTagsOptions(), removeReplaceSettings);
+            var readmeRewriterResult = ReadmeRewriter.Rewrite(
+                readmeContents,
+                readmeRelativePath,
+                RepositoryUrl,
+                RepositoryBranch,
+                GetRewriteTagsOptions(),
+                removeReplaceSettings);
             if (readmeRewriterResult != null)
             {
                 ProcessReadmeWriteResult(readmeRewriterResult);
             }
             else
             {
-                LogFormatError(CouldNotParseRepositoryUrlErrorFormat, nameof(RepositoryUrl), RepositoryUrl);
+                Log.LogError(MessageProvider.CouldNotParseRepositoryUrl(RepositoryUrl));
             }
         }
 
@@ -101,7 +105,7 @@ namespace NugetReadmeGithubRelativeToRaw
                 }
                 else
                 {
-                    LogFormatWarning(CouldNotParseRewriteTagsOptionsWarningFormat, nameof(RewriteTagsOptions), RewriteTagsOptions, DefaultRewriteTagsOptions.ToString());
+                    Log.LogWarning(MessageProvider.CouldNotParseRewriteTagsOptionsUsingDefault(RewriteTagsOptions, DefaultRewriteTagsOptions));
                 }
             }
             return options;
@@ -113,18 +117,13 @@ namespace NugetReadmeGithubRelativeToRaw
             {
                 foreach (var unsupportedImageDomain in readmeRewriterResult.UnsupportedImageDomains)
                 {
-                    LogFormatError(UnsupportedImageDomainErrorFormat, unsupportedImageDomain);
+                    Log.LogError(MessageProvider.UnsupportedImageDomain(unsupportedImageDomain));
                 }
             }
             else
             {
                 IOHelper.WriteAllText(OutputReadme, readmeRewriterResult.RewrittenReadme);
             }
-        }
-
-        private void LogFormatError(string format, params string[] args)
-        {
-            Log.LogError(string.Format(format, args));
         }
 
         private void LogFormatWarning(string format, params string[] args)

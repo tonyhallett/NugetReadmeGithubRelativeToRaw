@@ -9,12 +9,12 @@ namespace NugetReadmeGithubRelativeToRaw
     internal class RemovalOrReplacementProvider : IRemovalOrReplacementProvider
     {
         private readonly IIOHelper _ioHelper;
-        private readonly IErrorProvider errorProvider;
+        private readonly IMessageProvider _messageProvider;
 
-        public RemovalOrReplacementProvider(IIOHelper ioHelper, IErrorProvider errorProvider)
+        public RemovalOrReplacementProvider(IIOHelper ioHelper, IMessageProvider messageProvider)
         {
             _ioHelper = ioHelper;
-            this.errorProvider = errorProvider;
+            _messageProvider = messageProvider;
         }
 
         private sealed class StartEnd
@@ -29,10 +29,10 @@ namespace NugetReadmeGithubRelativeToRaw
             public string? End { get; }
         }
 
-        public RemovalOrReplacement? Provide(MetadataItem metadataItem, List<string> errors)
+        public RemovalOrReplacement? Provide(MetadataItem metadataItem, IAddError addError)
         {
-            if (TryParseCommentOrRegex(metadataItem, errors) is CommentOrRegex commentOrRegex &&
-                    GetStartEnd(metadataItem, errors) is StartEnd startEnd)
+            if (TryParseCommentOrRegex(metadataItem, addError) is CommentOrRegex commentOrRegex &&
+                    GetStartEnd(metadataItem, addError) is StartEnd startEnd)
             {
                 var replacementText = GetReplacementTextFromItem(metadataItem);
                 return new RemovalOrReplacement(
@@ -45,30 +45,25 @@ namespace NugetReadmeGithubRelativeToRaw
             return null;
         }
 
-        private CommentOrRegex? TryParseCommentOrRegex(MetadataItem metadataItem, List<string> errors)
+        private CommentOrRegex? TryParseCommentOrRegex(MetadataItem metadataItem, IAddError addError)
         {
             if (!Enum.TryParse<CommentOrRegex>(metadataItem.Metadata.CommentOrRegex, out var commentOrRegex))
             {
-                string error = errorProvider.ProvideUnsupportedCommentOrRegex(
-                    nameof(RemoveReplaceMetadata.CommentOrRegex),
-                    MsBuildPropertyItemNames.RemoveReplaceItem,
-                    metadataItem.TaskItem.ItemSpec,
-                    $"{nameof(CommentOrRegex.Comment)} | {nameof(CommentOrRegex.Regex)}"
-                    );
-                errors.Add( error );
+                string error = _messageProvider.UnsupportedCommentOrRegex(metadataItem.TaskItem.ItemSpec);
+                addError.AddError( error );
                 return null;
             }
             return commentOrRegex;
         }
 
-        private StartEnd? GetStartEnd(MetadataItem metadataItem, List<string> errors)
+        private StartEnd? GetStartEnd(MetadataItem metadataItem, IAddError addError)
         {
             var start = metadataItem.Metadata.Start!;
             var endRaw = metadataItem.Metadata.End;
             var end = string.IsNullOrEmpty(endRaw) ? null : endRaw;
             if (start == end)
             {
-                errors.Add($"If End metadata is specified on RemoveReplace item '{metadataItem.TaskItem.ItemSpec}' it must be different to Start.");
+                addError.AddError($"If End metadata is specified on RemoveReplace item '{metadataItem.TaskItem.ItemSpec}' it must be different to Start.");
                 return null;
             }
 

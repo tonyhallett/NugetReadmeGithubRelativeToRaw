@@ -5,6 +5,6 @@ namespace NugetReadmeGithubRelativeToRaw
 {
     internal interface IRemoveCommentsIdentifiersParser
     {
-        RemoveCommentIdentifiers? Parse(string? removeCommentIdentifiers, List<string> errors);
+        RemoveCommentIdentifiers? Parse(string? removeCommentIdentifiers, IAddError addErrors);
     }
 }

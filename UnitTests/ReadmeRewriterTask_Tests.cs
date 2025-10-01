@@ -26,6 +26,8 @@ namespace UnitTests
             public RemoveReplaceSettings? Settings { get; set; }
         }
 
+        
+
         private sealed class DummyIOHelper : IIOHelper
         {
             public const string ReadmeText = "readme";
@@ -71,6 +73,7 @@ namespace UnitTests
                 IOHelper = _ioHelper,
                 ReadmeRewriter = _mockReadmeRewriter.Object,
                 RemoveReplaceSettingsProvider = _mockRemoveReplaceSettingsProvider.Object,
+                MessageProvider = new ConcatenatingArgumentsMessageProvider(),
                 RepositoryUrl = repositoryUrl,
                 RepositoryBranch = repositoryBranch,
                 ProjectDirectoryPath = projectDirectoryPath
@@ -111,7 +114,7 @@ namespace UnitTests
                 Assert.That(result, Is.EqualTo(false));
                 Assert.That(
                     _dummyLogBuildEngine.SingleErrorMessage(), 
-                    Is.EqualTo(string.Format(ReadmeRewriterTask.ReadmeFileDoesNotExistErrorFormat,"projectdir;readme.md")));
+                    Is.EqualTo("projectdir;readme.md"));
             });
         }
 
@@ -140,7 +143,7 @@ namespace UnitTests
                 Assert.That(result, Is.EqualTo(false));
                 Assert.That(
                     _dummyLogBuildEngine.SingleErrorMessage(),
-                    Is.EqualTo(string.Format(ReadmeRewriterTask.CouldNotParseRepositoryUrlErrorFormat, nameof(ReadmeRewriterTask.RepositoryUrl), repositoryUrl)));
+                    Is.EqualTo(repositoryUrl));
             });
         }
 
@@ -163,7 +166,7 @@ namespace UnitTests
                 Assert.That(result, Is.EqualTo(false));
                 foreach (var (unsupportedImageDomain, error) in readmeRewriterResult.UnsupportedImageDomains.Zip(_dummyLogBuildEngine.ErrorMessages()))
                 {
-                    Assert.That(error, Is.EqualTo(string.Format(ReadmeRewriterTask.UnsupportedImageDomainErrorFormat, unsupportedImageDomain)));
+                    Assert.That(error, Is.EqualTo(unsupportedImageDomain));
                 }
             });
         }
@@ -207,11 +210,7 @@ namespace UnitTests
             {
                 Assert.That(
                     _dummyLogBuildEngine.SingleWarningMessage(), 
-                    Is.EqualTo(string.Format(
-                        ReadmeRewriterTask.CouldNotParseRewriteTagsOptionsWarningFormat,
-                        nameof(ReadmeRewriterTask.RewriteTagsOptions),
-                        rewriteTagsOptionsMSBuild, 
-                        ReadmeRewriterTask.DefaultRewriteTagsOptions)));
+                    Is.EqualTo($"{rewriteTagsOptionsMSBuild}{expectedRewriteTagsOptions}"));
             }
             else
             {

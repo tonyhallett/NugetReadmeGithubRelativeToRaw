@@ -5,11 +5,11 @@ namespace NugetReadmeGithubRelativeToRaw
 {
     internal class RemoveCommentsIdentifiersParser : IRemoveCommentsIdentifiersParser
     {
-        internal const string NumPartsError = "MSBuild Property {0} must have two semicolon delimited values: start and end.";
-        internal const string EmptyPartsError = "MSBuild Property {0} must have non-empty start and end values.";
-        internal const string SamePartsError = "MSBuild Property {0} must have different start to end";
+        private readonly IMessageProvider _messageProvider;
 
-        public RemoveCommentIdentifiers? Parse(string? removeCommentIdentifiers, List<string> errors)
+        public RemoveCommentsIdentifiersParser(IMessageProvider messageProvider) => _messageProvider = messageProvider;
+
+        public RemoveCommentIdentifiers? Parse(string? removeCommentIdentifiers, IAddError addError)
         {
             if (string.IsNullOrWhiteSpace(removeCommentIdentifiers))
             {
@@ -19,7 +19,7 @@ namespace NugetReadmeGithubRelativeToRaw
             var parts = removeCommentIdentifiers!.Split(';');
             if (parts.Length != 2)
             {
-                AddErrorFormat(NumPartsError);
+                addError.AddError(_messageProvider.RemoveCommentsIdentifiersFormat());
                 return null;
             }
 
@@ -27,22 +27,17 @@ namespace NugetReadmeGithubRelativeToRaw
             var end = parts[1].Trim();
             if (string.IsNullOrEmpty(start) || string.IsNullOrEmpty(end))
             {
-                AddErrorFormat(EmptyPartsError);
+                addError.AddError(_messageProvider.RemoveCommentsIdentifiersFormat());
                 return null;
             }
 
             if (start == end)
             {
-                AddErrorFormat(SamePartsError);
+                addError.AddError(_messageProvider.RemoveCommentsIdentifiersSameStartEnd());
                 return null;
             }
 
             return new RemoveCommentIdentifiers(start, end);
-
-            void AddErrorFormat(string format)
-            {
-                errors.Add(string.Format(format, nameof(ReadmeRewriterTask.RemoveCommentIdentifiers)));
-            }
         }
     }
 }

@@ -9,15 +9,15 @@ namespace UnitTests
     internal class RemovalOrReplacementProvider_Tests
     {
         private Mock<IIOHelper> _mockIOHelper;
-        private Mock<IErrorProvider> _mockErrorProvider;
+        private Mock<IMessageProvider> _mockMessageProvider;
         private RemovalOrReplacementProvider _removalOrReplacementProvider;
 
         [SetUp]
         public void SetUp()
         {
             _mockIOHelper = new Mock<IIOHelper>();
-            _mockErrorProvider = new Mock<IErrorProvider>();
-            _removalOrReplacementProvider = new RemovalOrReplacementProvider(_mockIOHelper.Object, _mockErrorProvider.Object);
+            _mockMessageProvider = new Mock<IMessageProvider>();
+            _removalOrReplacementProvider = new RemovalOrReplacementProvider(_mockIOHelper.Object, _mockMessageProvider.Object);
         }
 
         [TestCase(CommentOrRegex.Comment)]
@@ -32,24 +32,21 @@ namespace UnitTests
             };
             var taskItem = new TaskItem();
 
-            var errors = new List<string>();
-            var removalOrReplacement = _removalOrReplacementProvider.Provide(new MetadataItem(removeReplaceMetadata, taskItem), errors);
+            var addError = new CollectingAddError();
+            var removalOrReplacement = _removalOrReplacementProvider.Provide(new MetadataItem(removeReplaceMetadata, taskItem), addError);
 
             Assert.Multiple(() =>
             {
                 Assert.That(removalOrReplacement!.CommentOrRegex, Is.EqualTo(commentOrRegex));
-                Assert.That(errors, Is.Empty);
+                Assert.That(addError.Errors, Is.Empty);
             });
         }
 
         [Test]
         public void Should_Have_Error_When_Unsupported_CommentOrRegex()
         {
-            _mockErrorProvider.Setup(errorProvider => errorProvider.ProvideUnsupportedCommentOrRegex(
-                nameof(RemoveReplaceMetadata.CommentOrRegex), 
-                MsBuildPropertyItemNames.RemoveReplaceItem, 
-                "itemspec", 
-                $"{nameof(CommentOrRegex.Comment)} | {nameof(CommentOrRegex.Regex)}")).Returns("unsupported");
+            _mockMessageProvider.Setup(messageProvider => messageProvider.UnsupportedCommentOrRegex(
+                "itemspec")).Returns("unsupported");
             var removeReplaceMetadata = new RemoveReplaceMetadata
             {
                 CommentOrRegex = "unsupported",
@@ -58,13 +55,13 @@ namespace UnitTests
             };
             var taskItem = new TaskItem("itemspec");
 
-            var errors = new List<string>();
-            var removalOrReplacement = _removalOrReplacementProvider.Provide(new MetadataItem(removeReplaceMetadata, taskItem), errors);
+            var addError = new CollectingAddError();
+            var removalOrReplacement = _removalOrReplacementProvider.Provide(new MetadataItem(removeReplaceMetadata, taskItem), addError);
 
             Assert.Multiple(() =>
             {
                 Assert.That(removalOrReplacement, Is.Null);
-                Assert.That(errors.Single(), Is.EqualTo("unsupported"));
+                Assert.That(addError.Single(), Is.EqualTo("unsupported"));
             });
         }
 
@@ -79,13 +76,13 @@ namespace UnitTests
             };
             var taskItem = new TaskItem();
 
-            var errors = new List<string>();
-            var removalOrReplacement = _removalOrReplacementProvider.Provide(new MetadataItem(removeReplaceMetadata, taskItem), errors);
+            var addError = new CollectingAddError();
+            var removalOrReplacement = _removalOrReplacementProvider.Provide(new MetadataItem(removeReplaceMetadata, taskItem), addError);
 
             Assert.Multiple(() =>
             {
                 Assert.That(removalOrReplacement!.Start, Is.EqualTo("startregex"));
-                Assert.That(errors, Is.Empty);
+                Assert.That(addError.Errors, Is.Empty);
             });
         }
 
@@ -102,13 +99,13 @@ namespace UnitTests
             };
             var taskItem = new TaskItem();
 
-            var errors = new List<string>();
-            var removalOrReplacement = _removalOrReplacementProvider.Provide(new MetadataItem(removeReplaceMetadata, taskItem), errors);
+            var addError = new CollectingAddError();
+            var removalOrReplacement = _removalOrReplacementProvider.Provide(new MetadataItem(removeReplaceMetadata, taskItem), addError);
 
             Assert.Multiple(() =>
             {
                 Assert.That(removalOrReplacement!.End, Is.Null);
-                Assert.That(errors, Is.Empty);
+                Assert.That(addError.Errors, Is.Empty);
             });
         }
 
@@ -124,13 +121,13 @@ namespace UnitTests
             };
             var taskItem = new TaskItem();
 
-            var errors = new List<string>();
-            var removalOrReplacement = _removalOrReplacementProvider.Provide(new MetadataItem(removeReplaceMetadata, taskItem), errors);
+            var addError = new CollectingAddError();
+            var removalOrReplacement = _removalOrReplacementProvider.Provide(new MetadataItem(removeReplaceMetadata, taskItem), addError);
 
             Assert.Multiple(() =>
             {
                 Assert.That(removalOrReplacement!.End, Is.EqualTo("endregex"));
-                Assert.That(errors, Is.Empty);
+                Assert.That(addError.Errors, Is.Empty);
             });
         }
 
@@ -144,14 +141,14 @@ namespace UnitTests
                 ReplacementText = "replacement"
             };
             var taskItem = new TaskItem();
-            
-            var errors = new List<string>();
-            var removalOrReplacement = _removalOrReplacementProvider.Provide(new MetadataItem(removeReplaceMetadata, taskItem), errors);
+
+            var addError = new CollectingAddError();
+            var removalOrReplacement = _removalOrReplacementProvider.Provide(new MetadataItem(removeReplaceMetadata, taskItem), addError);
 
             Assert.Multiple(() =>
             {
                 Assert.That(removalOrReplacement!.ReplacementText, Is.EqualTo("replacement"));
-                Assert.That(errors, Is.Empty);
+                Assert.That(addError.Errors, Is.Empty);
             });
         }
 
@@ -174,12 +171,12 @@ namespace UnitTests
             _mockIOHelper.Setup(ioHelper => ioHelper.FileExists("fullpath")).Returns(true);
             _mockIOHelper.Setup(ioHelper => ioHelper.ReadAllText("fullpath")).Returns("filereplacement");
 
-            var errors = new List<string>();
-            var removalOrReplacement = _removalOrReplacementProvider.Provide(new MetadataItem(removeReplaceMetadata, testTaskItem), errors);
+            var addError = new CollectingAddError();
+            var removalOrReplacement = _removalOrReplacementProvider.Provide(new MetadataItem(removeReplaceMetadata, testTaskItem), addError);
             Assert.Multiple(() =>
             {
                 Assert.That(removalOrReplacement!.ReplacementText, Is.EqualTo("filereplacement"));
-                Assert.That(errors, Is.Empty);
+                Assert.That(addError.Errors, Is.Empty);
             });
         }
     }

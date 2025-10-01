@@ -3,16 +3,17 @@ using NugetReadmeGithubRelativeToRaw.Rewriter;
 
 namespace NugetReadmeGithubRelativeToRaw
 {
-    internal class RemoveReplaceSettingsResult : IRemoveReplaceSettingsResult
+    internal class RemoveReplaceSettingsResult : IRemoveReplaceSettingsResult, IAddError
     {
-        public RemoveReplaceSettings? Settings { get; }
+        private readonly List<string> _errors = new List<string>();
 
-        public RemoveReplaceSettingsResult(RemoveReplaceSettings? settings, IReadOnlyList<string> errors)
+        public RemoveReplaceSettings? Settings { get; set; }
+        
+        public IReadOnlyList<string> Errors => _errors;
+
+        public void AddError(string message)
         {
-            Settings = settings;
-            Errors = errors;
+            _errors.Add(message);
         }
-
-        public IReadOnlyList<string> Errors { get; }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Build.Framework;
 using NugetReadmeGithubRelativeToRaw.MSBuildHelpers;
 using NugetReadmeGithubRelativeToRaw.Rewriter;
@@ -10,76 +11,66 @@ namespace NugetReadmeGithubRelativeToRaw
         private readonly IMSBuildMetadataProvider _msBuildMetadataProvider;
         private readonly IRemoveCommentsIdentifiersParser _removeCommentsIdentifiersParser;
         private readonly IRemovalOrReplacementProvider removalOrReplacementProvider;
-        private readonly IErrorProvider errorProvider;
+        private readonly IMessageProvider messageProvider;
 
         public RemoveReplaceSettingsProvider(
             IMSBuildMetadataProvider msBuildMetadataProvider,
             IRemoveCommentsIdentifiersParser removeCommentsIdentifiersParser,
             IRemovalOrReplacementProvider removalOrReplacementProvider,
-            IErrorProvider errorProvider
+            IMessageProvider messageProvider
             )
         {
             _msBuildMetadataProvider = msBuildMetadataProvider;
             _removeCommentsIdentifiersParser = removeCommentsIdentifiersParser;
             this.removalOrReplacementProvider = removalOrReplacementProvider;
-            this.errorProvider = errorProvider;
+            this.messageProvider = messageProvider;
         }
 
         public IRemoveReplaceSettingsResult Provide(ITaskItem[]? removeReplaceItems, string? removeCommentIdentifiers)
         {
-            var errors = new List<string>();
-            var parsedRemoveCommentIdentifiers = _removeCommentsIdentifiersParser.Parse(removeCommentIdentifiers, errors);
-            if (errors.Count > 0)
+            var removeReplaceSettingsResult = new RemoveReplaceSettingsResult();
+            var parsedRemoveCommentIdentifiers = _removeCommentsIdentifiersParser.Parse(removeCommentIdentifiers, removeReplaceSettingsResult);
+            var removalOrReplacements = CreateRemovalOrReplacements(removeReplaceItems, removeReplaceSettingsResult);
+            
+            // if errors are added to and checked then this should not be necessary.
+            if (removeReplaceSettingsResult.Errors.Count > 0 || parsedRemoveCommentIdentifiers == null && removalOrReplacements.Count == 0)
             {
-                return new RemoveReplaceSettingsResult(null, errors);
+                return removeReplaceSettingsResult;
             }
 
-            var removalOrReplacements = CreateRemovalOrReplacements(removeReplaceItems, errors);
-            if (parsedRemoveCommentIdentifiers == null && removalOrReplacements.Count == 0)
-            {
-                return new RemoveReplaceSettingsResult(null, errors);
-            }
-
-            return new RemoveReplaceSettingsResult(new RemoveReplaceSettings(parsedRemoveCommentIdentifiers, removalOrReplacements), errors);
+            removeReplaceSettingsResult.Settings = new RemoveReplaceSettings(
+                parsedRemoveCommentIdentifiers, removalOrReplacements);
+            return removeReplaceSettingsResult;
         }
 
-        private List<RemovalOrReplacement> CreateRemovalOrReplacements(ITaskItem[]? removeReplaceItems, List<string> errors)
+        private List<RemovalOrReplacement> CreateRemovalOrReplacements(
+            ITaskItem[]? removeReplaceItems, 
+            IAddError addError)
         {
             var removalReplacements = new List<RemovalOrReplacement>();
-            if (removeReplaceItems == null)
-            {
-                return removalReplacements;
-            }
-
-            List<MetadataItem>? metadataItems = GetMetadataItems(removeReplaceItems, errors);
-            if (metadataItems == null)
-            {
-                return removalReplacements;
-            }
             
-            var initialErrorsCount = errors.Count;
-            foreach (var metadataItem in metadataItems)
+            List<MetadataItem> metadataItemsWithoutMissingMetadata = GetMetadataItemsWithoutMissingMetadata(removeReplaceItems, addError);
+
+            foreach (var metadataItemWithoutMissingMetadata in metadataItemsWithoutMissingMetadata)
             {
-                var removalOrReplacement = removalOrReplacementProvider.Provide(metadataItem, errors);
-                if(removalOrReplacement == null)
+                var removalOrReplacement = removalOrReplacementProvider.Provide(metadataItemWithoutMissingMetadata, addError);
+                if (removalOrReplacement != null)
                 {
-                    break;
+                    removalReplacements.Add(removalOrReplacement);
                 }
-                removalReplacements.Add(removalOrReplacement);
             }
 
-            if (errors.Count > initialErrorsCount)
-            {
-                removalReplacements.Clear();
-            }
-            
-            return removalReplacements;
+            return removalReplacements.Count == removeReplaceItems?.Length ? removalReplacements : Enumerable.Empty<RemovalOrReplacement>().ToList();
         }
 
-
-        private List<MetadataItem>? GetMetadataItems(ITaskItem[] removeReplaceItems, List<string> errors)
+        private List<MetadataItem> GetMetadataItemsWithoutMissingMetadata(ITaskItem[]? removeReplaceItems, IAddError addError)
         {
             List<MetadataItem> metadataItems = new List<MetadataItem>();
+            if (removeReplaceItems == null)
+            {
+                return metadataItems;
+            }
+
             foreach (var removeReplaceItem in removeReplaceItems)
             {
                 var metadata = _msBuildMetadataProvider.GetCustomMetadata<RemoveReplaceMetadata>(removeReplaceItem);
@@ -87,16 +78,18 @@ namespace NugetReadmeGithubRelativeToRaw
                 {
                     foreach (var missingMetadataName in metadata.MissingMetadataNames)
                     {
-                        errors.Add(errorProvider.ProvideRequiredMetadataError(
+                        addError.AddError(messageProvider.RequiredMetadata(
                             missingMetadataName,
-                            MsBuildPropertyItemNames.RemoveReplaceItem,
                             removeReplaceItem.ItemSpec
                             ));
                     }
-                    return null;
                 }
-                metadataItems.Add(new MetadataItem(metadata, removeReplaceItem));
+                else
+                {
+                    metadataItems.Add(new MetadataItem(metadata, removeReplaceItem));
+                }
             }
+
 
             return metadataItems;
         }
