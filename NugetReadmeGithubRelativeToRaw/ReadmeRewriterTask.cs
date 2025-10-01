@@ -2,6 +2,7 @@
 using Microsoft.Build.Framework;
 using NugetReadmeGithubRelativeToRaw.MSBuildHelpers;
 using NugetReadmeGithubRelativeToRaw.Rewriter;
+using InputOutputHelper = NugetReadmeGithubRelativeToRaw.IOHelper;
 
 namespace NugetReadmeGithubRelativeToRaw
 {
@@ -32,14 +33,15 @@ namespace NugetReadmeGithubRelativeToRaw
 
         public ITaskItem[]? RemoveReplaceItems { get; set; }
 
-        internal IIOHelper IOHelper { get; set; } = new IOHelper();
+        internal IIOHelper IOHelper { get; set; } = InputOutputHelper.Instance;
 
         internal IReadmeRewriter ReadmeRewriter { get; set; } = new ReadmeRewriter();
 
         internal IRemoveReplaceSettingsProvider RemoveReplaceSettingsProvider { get; set; } = new RemoveReplaceSettingsProvider(
             new MSBuildMetadataProvider(), 
             new RemoveCommentsIdentifiersParser(),
-            new RemovalOrReplacementProvider(new IOHelper())
+            new RemovalOrReplacementProvider(InputOutputHelper.Instance, ErrorProvider.Instance),
+            ErrorProvider.Instance
             );
 
         public override bool Execute()

@@ -8,13 +8,13 @@ namespace NugetReadmeGithubRelativeToRaw
 {
     internal class RemovalOrReplacementProvider : IRemovalOrReplacementProvider
     {
-        internal const string UnsupportedCommentOrRegexMetadataErrorFormat = "{0} metadata on {1} item '{2}' should be {3} or {4}.";
-
         private readonly IIOHelper _ioHelper;
+        private readonly IErrorProvider errorProvider;
 
-        public RemovalOrReplacementProvider(IIOHelper ioHelper)
+        public RemovalOrReplacementProvider(IIOHelper ioHelper, IErrorProvider errorProvider)
         {
             _ioHelper = ioHelper;
+            this.errorProvider = errorProvider;
         }
 
         private sealed class StartEnd
@@ -49,13 +49,13 @@ namespace NugetReadmeGithubRelativeToRaw
         {
             if (!Enum.TryParse<CommentOrRegex>(metadataItem.Metadata.CommentOrRegex, out var commentOrRegex))
             {
-                errors.Add(string.Format(
-                    UnsupportedCommentOrRegexMetadataErrorFormat, 
+                string error = errorProvider.ProvideUnsupportedCommentOrRegex(
                     nameof(RemoveReplaceMetadata.CommentOrRegex),
                     MsBuildPropertyItemNames.RemoveReplaceItem,
-                    metadataItem.TaskItem.ItemSpec, 
-                    nameof(CommentOrRegex.Comment), 
-                    nameof(CommentOrRegex.Regex)));
+                    metadataItem.TaskItem.ItemSpec,
+                    $"{nameof(CommentOrRegex.Comment)} | {nameof(CommentOrRegex.Regex)}"
+                    );
+                errors.Add( error );
                 return null;
             }
             return commentOrRegex;

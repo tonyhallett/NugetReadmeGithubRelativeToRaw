@@ -7,21 +7,22 @@ namespace NugetReadmeGithubRelativeToRaw
 {
     internal class RemoveReplaceSettingsProvider : IRemoveReplaceSettingsProvider
     {
-        internal const string RequiredMetadataErrorFormat = "{0} metadata is required on {1} item '{2}'.";
-
         private readonly IMSBuildMetadataProvider _msBuildMetadataProvider;
         private readonly IRemoveCommentsIdentifiersParser _removeCommentsIdentifiersParser;
         private readonly IRemovalOrReplacementProvider removalOrReplacementProvider;
+        private readonly IErrorProvider errorProvider;
 
         public RemoveReplaceSettingsProvider(
             IMSBuildMetadataProvider msBuildMetadataProvider,
             IRemoveCommentsIdentifiersParser removeCommentsIdentifiersParser,
-            IRemovalOrReplacementProvider removalOrReplacementProvider
+            IRemovalOrReplacementProvider removalOrReplacementProvider,
+            IErrorProvider errorProvider
             )
         {
             _msBuildMetadataProvider = msBuildMetadataProvider;
             _removeCommentsIdentifiersParser = removeCommentsIdentifiersParser;
             this.removalOrReplacementProvider = removalOrReplacementProvider;
+            this.errorProvider = errorProvider;
         }
 
         public IRemoveReplaceSettingsResult Provide(ITaskItem[]? removeReplaceItems, string? removeCommentIdentifiers)
@@ -86,12 +87,11 @@ namespace NugetReadmeGithubRelativeToRaw
                 {
                     foreach (var missingMetadataName in metadata.MissingMetadataNames)
                     {
-                        errors.Add(
-                            string.Format(
-                                RequiredMetadataErrorFormat,
-                                MsBuildPropertyItemNames.RemoveReplaceItem, 
-                                missingMetadataName, 
-                                removeReplaceItem.ItemSpec));
+                        errors.Add(errorProvider.ProvideRequiredMetadataError(
+                            missingMetadataName,
+                            MsBuildPropertyItemNames.RemoveReplaceItem,
+                            removeReplaceItem.ItemSpec
+                            ));
                     }
                     return null;
                 }

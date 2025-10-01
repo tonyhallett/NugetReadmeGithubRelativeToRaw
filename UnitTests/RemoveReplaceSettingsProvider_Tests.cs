@@ -1,5 +1,4 @@
-﻿using Microsoft.Build.Framework;
-using Moq;
+﻿using Moq;
 using NugetReadmeGithubRelativeToRaw;
 using NugetReadmeGithubRelativeToRaw.MSBuildHelpers;
 using NugetReadmeGithubRelativeToRaw.Rewriter;
@@ -11,6 +10,7 @@ namespace UnitTests
         private Mock<IRemovalOrReplacementProvider> _mockRemovalOrReplacementProvider;
         private Mock<IMSBuildMetadataProvider> _mockMSBuildMetadataProvider;
         private Mock<IRemoveCommentsIdentifiersParser> _mockRemoveCommentsIdentifiers;
+        private Mock<IErrorProvider> _mockErrorProvider;
         private RemoveReplaceSettingsProvider _removeReplaceSettingsProvider;
 
         [SetUp]
@@ -19,10 +19,13 @@ namespace UnitTests
             _mockRemovalOrReplacementProvider = new Mock<IRemovalOrReplacementProvider>();
             _mockMSBuildMetadataProvider = new Mock<IMSBuildMetadataProvider>();
             _mockRemoveCommentsIdentifiers = new Mock<IRemoveCommentsIdentifiersParser>();
+            _mockErrorProvider = new Mock<IErrorProvider>();
             _removeReplaceSettingsProvider = new RemoveReplaceSettingsProvider(
                 _mockMSBuildMetadataProvider.Object, 
                 _mockRemoveCommentsIdentifiers.Object,
-                _mockRemovalOrReplacementProvider.Object);
+                _mockRemovalOrReplacementProvider.Object,
+                _mockErrorProvider.Object
+                );
         }
 
         [Test]

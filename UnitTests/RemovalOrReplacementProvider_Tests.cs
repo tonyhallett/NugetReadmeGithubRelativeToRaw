@@ -9,13 +9,15 @@ namespace UnitTests
     internal class RemovalOrReplacementProvider_Tests
     {
         private Mock<IIOHelper> _mockIOHelper;
+        private Mock<IErrorProvider> _mockErrorProvider;
         private RemovalOrReplacementProvider _removalOrReplacementProvider;
 
         [SetUp]
         public void SetUp()
         {
             _mockIOHelper = new Mock<IIOHelper>();
-            _removalOrReplacementProvider = new RemovalOrReplacementProvider(_mockIOHelper.Object);
+            _mockErrorProvider = new Mock<IErrorProvider>();
+            _removalOrReplacementProvider = new RemovalOrReplacementProvider(_mockIOHelper.Object, _mockErrorProvider.Object);
         }
 
         [TestCase(CommentOrRegex.Comment)]
@@ -43,28 +45,26 @@ namespace UnitTests
         [Test]
         public void Should_Have_Error_When_Unsupported_CommentOrRegex()
         {
+            _mockErrorProvider.Setup(errorProvider => errorProvider.ProvideUnsupportedCommentOrRegex(
+                nameof(RemoveReplaceMetadata.CommentOrRegex), 
+                MsBuildPropertyItemNames.RemoveReplaceItem, 
+                "itemspec", 
+                $"{nameof(CommentOrRegex.Comment)} | {nameof(CommentOrRegex.Regex)}")).Returns("unsupported");
             var removeReplaceMetadata = new RemoveReplaceMetadata
             {
                 CommentOrRegex = "unsupported",
                 Start = "start",
                 ReplacementText = "..."
             };
-            var taskItem = new TaskItem();
+            var taskItem = new TaskItem("itemspec");
 
             var errors = new List<string>();
             var removalOrReplacement = _removalOrReplacementProvider.Provide(new MetadataItem(removeReplaceMetadata, taskItem), errors);
 
-            var expectedError = string.Format(
-                RemovalOrReplacementProvider.UnsupportedCommentOrRegexMetadataErrorFormat,
-                nameof(RemoveReplaceMetadata.CommentOrRegex),
-                MsBuildPropertyItemNames.RemoveReplaceItem,
-                taskItem.ItemSpec,
-                nameof(CommentOrRegex.Comment),
-                nameof(CommentOrRegex.Regex));
             Assert.Multiple(() =>
             {
                 Assert.That(removalOrReplacement, Is.Null);
-                Assert.That(errors.Single(), Is.EqualTo(expectedError));
+                Assert.That(errors.Single(), Is.EqualTo("unsupported"));
             });
         }
 

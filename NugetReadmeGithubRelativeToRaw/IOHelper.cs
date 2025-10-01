@@ -6,6 +6,8 @@ namespace NugetReadmeGithubRelativeToRaw
     [ExcludeFromCodeCoverage]
     internal class IOHelper : IIOHelper
     {
+        public static IOHelper Instance { get; } = new IOHelper();
+
         public string CombinePaths(string path1, string path2)
         {
             return Path.Combine(path1, path2);
