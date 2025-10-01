@@ -1,7 +1,9 @@
-﻿using System.IO;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.IO;
 
 namespace NugetReadmeGithubRelativeToRaw
 {
+    [ExcludeFromCodeCoverage]
     internal class IOHelper : IIOHelper
     {
         public string CombinePaths(string path1, string path2)

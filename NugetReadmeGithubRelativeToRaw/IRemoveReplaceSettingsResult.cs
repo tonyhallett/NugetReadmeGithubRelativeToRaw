@@ -5,7 +5,7 @@ namespace NugetReadmeGithubRelativeToRaw
 {
     internal interface IRemoveReplaceSettingsResult
     {
-        IReadOnlyList<string>? Errors { get; }
+        IReadOnlyList<string> Errors { get; }
         RemoveReplaceSettings? Settings { get; }
     }
 }

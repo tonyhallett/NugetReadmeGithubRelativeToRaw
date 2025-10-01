@@ -7,12 +7,12 @@ namespace NugetReadmeGithubRelativeToRaw
     {
         public RemoveReplaceSettings? Settings { get; }
 
-        public RemoveReplaceSettingsResult(RemoveReplaceSettings? settings, IReadOnlyList<string>? errors)
+        public RemoveReplaceSettingsResult(RemoveReplaceSettings? settings, IReadOnlyList<string> errors)
         {
             Settings = settings;
             Errors = errors;
         }
 
-        public IReadOnlyList<string>? Errors { get; }
+        public IReadOnlyList<string> Errors { get; }
     }
 }

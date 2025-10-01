@@ -36,7 +36,11 @@ namespace NugetReadmeGithubRelativeToRaw
 
         internal IReadmeRewriter ReadmeRewriter { get; set; } = new ReadmeRewriter();
 
-        internal IRemoveReplaceSettingsProvider RemoveReplaceSettingsProvider { get; set; } = new RemoveReplaceSettingsProvider(new IOHelper(), new MSBuildMetadataProvider(), new RemoveCommentsIdentifiersParser());
+        internal IRemoveReplaceSettingsProvider RemoveReplaceSettingsProvider { get; set; } = new RemoveReplaceSettingsProvider(
+            new MSBuildMetadataProvider(), 
+            new RemoveCommentsIdentifiersParser(),
+            new RemovalOrReplacementProvider(new IOHelper())
+            );
 
         public override bool Execute()
         {
@@ -57,7 +61,7 @@ namespace NugetReadmeGithubRelativeToRaw
         private void TryRewrite(string readmeContents, string readmeRelativePath)
         {
             var removeReplaceSettingsResult = RemoveReplaceSettingsProvider.Provide(RemoveReplaceItems, RemoveCommentIdentifiers);
-            if(removeReplaceSettingsResult.Errors?.Count > 0)
+            if(removeReplaceSettingsResult.Errors.Count > 0)
             {
                 foreach(var error in removeReplaceSettingsResult.Errors)
                 {

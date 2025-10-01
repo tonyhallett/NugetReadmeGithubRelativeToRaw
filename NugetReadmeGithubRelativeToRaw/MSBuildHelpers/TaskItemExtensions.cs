@@ -1,7 +1,9 @@
-﻿using Microsoft.Build.Framework;
+﻿using System.Diagnostics.CodeAnalysis;
+using Microsoft.Build.Framework;
 
 namespace NugetReadmeGithubRelativeToRaw.MSBuildHelpers
 {
+    [ExcludeFromCodeCoverage]
     internal static class TaskItemExtensions
     {
         public static string GetFullPath(this ITaskItem taskItem)

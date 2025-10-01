@@ -1,5 +1,8 @@
-﻿namespace NugetReadmeGithubRelativeToRaw.MSBuildHelpers
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace NugetReadmeGithubRelativeToRaw.MSBuildHelpers
 {
+    [ExcludeFromCodeCoverage]
     internal class ItemSpecModifiers
     {
         internal const string FullPath = "FullPath";

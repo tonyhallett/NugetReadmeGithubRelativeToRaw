@@ -22,7 +22,7 @@ namespace UnitTests
 
         private class TestRemoveReplaceSettingsResult : IRemoveReplaceSettingsResult
         {
-            public IReadOnlyList<string>? Errors { get; set; }
+            public IReadOnlyList<string> Errors { get; set; } = [];
             public RemoveReplaceSettings? Settings { get; set; }
         }
 
@@ -135,10 +135,13 @@ namespace UnitTests
         {
             var result = ExecuteReadmeExists();
 
-            Assert.That(result, Is.EqualTo(false));
-            Assert.That(
-                _dummyLogBuildEngine.SingleErrorMessage(), 
-                Is.EqualTo(string.Format(ReadmeRewriterTask.CouldNotParseRepositoryUrlErrorFormat,nameof(ReadmeRewriterTask.RepositoryUrl), repositoryUrl)));
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.EqualTo(false));
+                Assert.That(
+                    _dummyLogBuildEngine.SingleErrorMessage(),
+                    Is.EqualTo(string.Format(ReadmeRewriterTask.CouldNotParseRepositoryUrlErrorFormat, nameof(ReadmeRewriterTask.RepositoryUrl), repositoryUrl)));
+            });
         }
 
         [Test]
