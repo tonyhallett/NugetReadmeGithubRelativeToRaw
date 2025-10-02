@@ -72,7 +72,6 @@ namespace NugetReadmeGithubRelativeToRaw
             {
                 Rewrite(readmeContents, readmeRelativePath, removeReplaceSettingsResult.Settings);
             }
-            
         }
 
         private void Rewrite(string readmeContents, string readmeRelativePath, RemoveReplaceSettings? removeReplaceSettings)
@@ -125,11 +124,5 @@ namespace NugetReadmeGithubRelativeToRaw
                 IOHelper.WriteAllText(OutputReadme, readmeRewriterResult.RewrittenReadme);
             }
         }
-
-        private void LogFormatWarning(string format, params string[] args)
-        {
-            Log.LogWarning(string.Format(format, args));
-        }
-
     }
 }

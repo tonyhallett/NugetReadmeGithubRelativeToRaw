@@ -20,13 +20,11 @@ namespace UnitTests
         private ReadmeRewriterTask _readmeRewriterTask;
         private TestRemoveReplaceSettingsResult removeReplaceSettingsResult;
 
-        private class TestRemoveReplaceSettingsResult : IRemoveReplaceSettingsResult
+        private sealed class TestRemoveReplaceSettingsResult : IRemoveReplaceSettingsResult
         {
             public IReadOnlyList<string> Errors { get; set; } = [];
             public RemoveReplaceSettings? Settings { get; set; }
         }
-
-        
 
         private sealed class DummyIOHelper : IIOHelper
         {
@@ -216,6 +214,19 @@ namespace UnitTests
             {
                 Assert.That(_dummyLogBuildEngine.HasEvents<BuildWarningEventArgs>(), Is.False);
             }
+        }
+
+        [Test]
+        public void Should_Log_Errors_From_RemoveReplaceSettingsProvider()
+        {
+            _mockRemoveReplaceSettingsProvider.Setup(removeReplaceSettingsProvider => removeReplaceSettingsProvider.Provide(It.IsAny<ITaskItem[]?>(),It.IsAny<string?>()))
+                .Returns(new TestRemoveReplaceSettingsResult
+                {
+                    Errors = ["error1"]
+                });
+            ExecuteReadmeExists();
+
+            Assert.That(_dummyLogBuildEngine.SingleErrorMessage(),Is.EqualTo("error1"));
         }
     }
 }
