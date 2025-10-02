@@ -13,7 +13,7 @@ namespace UnitTests
         {
             var repoUrl = CreateRepositoryUrl("username", "reponame");
 
-            return ReadmeRewriter.Rewrite(readmeContent, "/readme.md", repoUrl, "main", rewriteTagsOptions, removeReplaceSettings)!;
+            return ReadmeRewriter.Rewrite(rewriteTagsOptions, readmeContent, "/readme.md", repoUrl, "main", removeReplaceSettings)!;
         }
 
         protected ReadmeRewriterResult RewriteUserRepoMainReadMe(string readmeContent, string rewriteTagsOptions)

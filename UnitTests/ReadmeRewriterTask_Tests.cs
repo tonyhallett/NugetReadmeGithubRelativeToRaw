@@ -122,20 +122,38 @@ namespace UnitTests
             return _readmeRewriterTask.Execute();
         }
 
-        [Test]
-        public void Should_Rewrite_The_Readme_File_When_Exists()
+        [TestCase(true)]
+        [TestCase(false)]
+        public void Should_ReadmeRewriter_Rewrite_The_Readme_File_When_Exists(bool withSettings)
         {
-            _readmeRewriterTask.ReadmeRelativePath = "relativeReadme.md";
+            if (withSettings)
+            {
+                removeReplaceSettingsResult.Settings = new RemoveReplaceSettings(null, []);
+            }
+            SetupReadMeRewriter(new ReadmeRewriterResult(null, [], false, true));
             var result = ExecuteReadmeExists();
 
-            _mockReadmeRewriter.Verify(readmeRewriter => readmeRewriter.Rewrite(DummyIOHelper.ReadmeText, _readmeRewriterTask.ReadmeRelativePath, repositoryUrl, repositoryBranch, It.IsAny<RewriteTagsOptions>(), It.IsAny<RemoveReplaceSettings>()));
+            _mockReadmeRewriter.VerifyAll();
+        }
+
+        private void SetupReadMeRewriter(ReadmeRewriterResult readmeRewriterResult, RewriteTagsOptions rewriteTagsOptions = RewriteTagsOptions.Error)
+        {
+            _readmeRewriterTask.ReadmeRelativePath = "relativeReadme.md";
+            _mockReadmeRewriter.Setup(readmeRewriter => readmeRewriter.Rewrite(
+                rewriteTagsOptions,
+                DummyIOHelper.ReadmeText,
+                _readmeRewriterTask.ReadmeRelativePath,
+                repositoryUrl,
+                repositoryBranch,
+                removeReplaceSettingsResult.Settings)).Returns(readmeRewriterResult);
         }
 
         [Test]
         public void Should_Log_Error_When_RepositoryUrl_Cannot_Be_Parsed()
         {
+            SetupReadMeRewriter(new ReadmeRewriterResult(null, [], false, true));
             var result = ExecuteReadmeExists();
-
+            
             Assert.Multiple(() =>
             {
                 Assert.That(result, Is.EqualTo(false));
@@ -148,13 +166,13 @@ namespace UnitTests
         [Test]
         public void Should_Log_Error_For_Every_Unsupported_Image_Domain()
         {
-            ReadmeRewriterResult readmeRewriterResult = new ReadmeRewriterResult("rewrittenReadme", ["unsupported1", "unsupported2"]);
+            ReadmeRewriterResult readmeRewriterResult = new ReadmeRewriterResult(null, ["unsupported1", "unsupported2"], false, false);
             _mockReadmeRewriter.Setup(readmeRewriter => readmeRewriter.Rewrite(
+                It.IsAny<RewriteTagsOptions>(),
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 repositoryUrl,
                 repositoryBranch,
-                It.IsAny<RewriteTagsOptions>(),
                 It.IsAny<RemoveReplaceSettings>())).Returns(readmeRewriterResult);
 
             var result = ExecuteReadmeExists();
@@ -170,17 +188,39 @@ namespace UnitTests
         }
 
         [Test]
-        public void Should_Write_Rewritten_Readme_To_OutputReadme()
+        public void Should_Log_Error_For_Unsupported_HTML()
         {
-            _readmeRewriterTask.OutputReadme = "outputReadme.md";
-            removeReplaceSettingsResult.Settings = new RemoveReplaceSettings(null, []);
-            ReadmeRewriterResult readmeRewriterResult = new ReadmeRewriterResult("rewrittenReadme", []);
+            ReadmeRewriterResult readmeRewriterResult = new ReadmeRewriterResult(null, [], true, false);
             _mockReadmeRewriter.Setup(readmeRewriter => readmeRewriter.Rewrite(
+                It.IsAny<RewriteTagsOptions>(),
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 repositoryUrl,
                 repositoryBranch,
+                It.IsAny<RemoveReplaceSettings>())).Returns(readmeRewriterResult);
+
+            var result = ExecuteReadmeExists();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.EqualTo(false));
+                Assert.That(_dummyLogBuildEngine.SingleErrorMessage, Is.EqualTo(nameof(IMessageProvider.ReadmeHasUnsupportedHTML)));
+            });
+        }
+
+
+        [Test]
+        public void Should_Write_Rewritten_Readme_To_OutputReadme()
+        {
+            _readmeRewriterTask.OutputReadme = "outputReadme.md";
+            removeReplaceSettingsResult.Settings = new RemoveReplaceSettings(null, []);
+            ReadmeRewriterResult readmeRewriterResult = new ReadmeRewriterResult("rewrittenReadme", [], false, false);
+            _mockReadmeRewriter.Setup(readmeRewriter => readmeRewriter.Rewrite(
                 It.IsAny<RewriteTagsOptions>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                repositoryUrl,
+                repositoryBranch,
                 removeReplaceSettingsResult.Settings)).Returns(readmeRewriterResult);
 
             var result = ExecuteReadmeExists();
@@ -193,16 +233,15 @@ namespace UnitTests
             });
         }
 
-        [TestCase(null,nameof(RewriteTagsOptions.All),false)]
-        [TestCase("malformed", nameof(RewriteTagsOptions.All), true)]
+        [TestCase(null,nameof(RewriteTagsOptions.Error),false)] // uses the default
+        [TestCase("malformed", nameof(RewriteTagsOptions.Error), true)] // uses the default
         [TestCase("RewriteImgTagsForSupportedDomains, RewriteBrTags", "RewriteImgTagsForSupportedDomains, RewriteBrTags", false)]
         public void Should_Use_RewriteTags_Options(string? rewriteTagsOptionsMSBuild, string expectedRewriteTagsOptionsStr, bool expectsLogsWarning)
         {
             var expectedRewriteTagsOptions = RewriteTagsOptionsParser.Parse(expectedRewriteTagsOptionsStr);
+            SetupReadMeRewriter(new ReadmeRewriterResult(null, [], false, true), expectedRewriteTagsOptions);
             _readmeRewriterTask.RewriteTagsOptions = rewriteTagsOptionsMSBuild;
             var result = ExecuteReadmeExists();
-
-            _mockReadmeRewriter.Verify(readmeRewriter => readmeRewriter.Rewrite(It.IsAny<string>(), It.IsAny<string>(), repositoryUrl, repositoryBranch, expectedRewriteTagsOptions, It.IsAny<RemoveReplaceSettings>()));
 
             if (expectsLogsWarning)
             {

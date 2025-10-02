@@ -16,6 +16,8 @@ namespace NugetReadmeGithubRelativeToRaw
 
         public string ReadmeFileDoesNotExist(string readmeFilePath) => $"Readme file does not exist at '{readmeFilePath}'";
 
+        public string ReadmeHasUnsupportedHTML() => "Readme has unsupported HTML";
+
         public string RemoveCommentsIdentifiersFormat() 
             => $"MSBuild Property {nameof(ReadmeRewriterTask.RemoveCommentIdentifiers)} must have two semicolon delimited values: start and end.";
 

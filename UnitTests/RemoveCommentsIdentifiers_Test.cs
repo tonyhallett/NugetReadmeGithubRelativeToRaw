@@ -27,6 +27,11 @@ namespace UnitTests
                 throw new NotImplementedException();
             }
 
+            public string ReadmeHasUnsupportedHTML()
+            {
+                throw new NotImplementedException();
+            }
+
             public string RemoveCommentsIdentifiersFormat() => FormatError;
 
             public string RemoveCommentsIdentifiersSameStartEnd() => SameStartEndError;

@@ -14,7 +14,7 @@ namespace UnitTests
             var repoUrl = CreateRepositoryUrl(username, reponame);
             var expectedRepoRef = repoRef ?? "master";
             var expectedRedmeRewritten = CreateMarkdownImage($"https://raw.githubusercontent.com/{username}/{reponame}/{expectedRepoRef}/{relativePath}");
-            var readmeRewritten = ReadmeRewriter.Rewrite(readmeContent, "/readme.md", repoUrl, repoRef)!.RewrittenReadme;
+            var readmeRewritten = ReadmeRewriter.Rewrite(RewriteTagsOptions.None, readmeContent, "/readme.md", repoUrl, repoRef)!.RewrittenReadme;
             Assert.That(readmeRewritten, Is.EqualTo(expectedRedmeRewritten));
         }
 
@@ -31,31 +31,29 @@ namespace UnitTests
             Assert.That(readmeRewritten, Is.EqualTo(codeBlock));
         }
 
-        [Test]
-        public void Should_Not_Rewrite_Absolute_Markdown_Image()
-        {
-            var readmeContent = CreateMarkdownImage("https://example.com/image.png");
-
-            var readmeRewritten = RewriteUserRepoMainReadMe(readmeContent).RewrittenReadme;
-            
-            Assert.That(readmeRewritten, Is.EqualTo(readmeContent));
-        }
-
         [TestCase("https://raw.githubusercontent.com/me/repo/refs/heads/master/dir/file.gif", false)]
         [TestCase("https://untrusted/file.gif", true)]
         public void Should_Report_On_Untrusted_Image_Domains(string imageUrl, bool expectedUntrusted)
         {
             var readmeContent = CreateMarkdownImage(imageUrl);
 
-            var unsupportedImageDomains = RewriteUserRepoMainReadMe(readmeContent).UnsupportedImageDomains;
-            if(expectedUntrusted)
+            var result = RewriteUserRepoMainReadMe(readmeContent);
+            var unsupportedImageDomains = result.UnsupportedImageDomains;
+            if (expectedUntrusted)
             {
-                Assert.That(unsupportedImageDomains, Has.Count.EqualTo(1));
-                Assert.That(unsupportedImageDomains, Does.Contain("untrusted"));
+                Assert.Multiple(() =>
+                {
+                    Assert.That(result.RewrittenReadme, Is.Null);
+                    Assert.That(unsupportedImageDomains.Single(), Is.EqualTo("untrusted"));
+                });
             }
             else
             {
-                Assert.That(unsupportedImageDomains, Is.Empty);
+                Assert.Multiple(() =>
+                {
+                    Assert.That(result.RewrittenReadme, Is.EqualTo(readmeContent));
+                    Assert.That(unsupportedImageDomains, Is.Empty);
+                });
             }
         }
 

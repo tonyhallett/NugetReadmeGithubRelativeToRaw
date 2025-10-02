@@ -25,16 +25,26 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
             this.htmlFragmentParser = htmlFragmentParser;
         }
 
-        public IMarkdownElementsProcessResult Process(RelevantMarkdownElements relevantMarkdownElements, OwnerRepoRefReadmePath ownerRepoRefReadmePath, RewriteTagsOptions rewriteTagsOptions)
+        public IMarkdownElementsProcessResult Process(
+            RelevantMarkdownElements relevantMarkdownElements, 
+            OwnerRepoRefReadmePath? ownerRepoRefReadmePath, 
+            RewriteTagsOptions rewriteTagsOptions)
         {
             var markdownElementsProcessResult = new MarkdownElementsProcessResult();
             ProcessLinkInlines(relevantMarkdownElements.LinkInlines, markdownElementsProcessResult, ownerRepoRefReadmePath);
             ProcessHtmlBlocks(relevantMarkdownElements.HtmlBlocks, markdownElementsProcessResult, ownerRepoRefReadmePath, rewriteTagsOptions);
-            ProcessHtmlInlines(relevantMarkdownElements.HtmlInlines, markdownElementsProcessResult, ownerRepoRefReadmePath, rewriteTagsOptions);
+            if (ownerRepoRefReadmePath != null)
+            {
+                ProcessHtmlInlines(relevantMarkdownElements.HtmlInlines, markdownElementsProcessResult, ownerRepoRefReadmePath, rewriteTagsOptions);
+            }
             return markdownElementsProcessResult;
         }
 
-        private void ProcessHtmlInlines(IEnumerable<HtmlInline> htmlInlines, MarkdownElementsProcessResult markdownElementsProcessResult, OwnerRepoRefReadmePath ownerRepoRefReadmePath, RewriteTagsOptions rewriteTagsOptions)
+        private void ProcessHtmlInlines(
+            IEnumerable<HtmlInline> htmlInlines, 
+            MarkdownElementsProcessResult markdownElementsProcessResult, 
+            OwnerRepoRefReadmePath ownerRepoRefReadmePath, 
+            RewriteTagsOptions rewriteTagsOptions)
         {
             foreach (var htmlInline in htmlInlines)
             {
@@ -68,7 +78,7 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
         private void ProcessHtmlBlocks(
             IEnumerable<HtmlBlock> htmlBlocks, 
             MarkdownElementsProcessResult markdownElementsProcessResult,
-            OwnerRepoRefReadmePath ownerRepoRefReadmePath, 
+            OwnerRepoRefReadmePath? ownerRepoRefReadmePath, 
             RewriteTagsOptions rewriteTagsOptions)
         {
             foreach (var htmlBlock in htmlBlocks)
@@ -83,10 +93,14 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
                             if (!nugetImageDomainValidator.IsTrustedImageDomain(absoluteUri.OriginalString))
                             {
                                 markdownElementsProcessResult.AddUnsupportedImageDomain(absoluteUri.Host);
-                                break;
+                                continue;
                             }
                         }else
                         {
+                            if(ownerRepoRefReadmePath == null)
+                            {
+                                continue;
+                            }
                             src = gitHubUrlHelper.GetGitHubAbsoluteUrl(src, ownerRepoRefReadmePath, true)!;
                         }
                         var imgTagReplacement = $"![{srcAlt.Alt}]({src})";
@@ -104,7 +118,7 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
         private void ProcessLinkInlines(
             IEnumerable<LinkInline> linkInlines, 
             MarkdownElementsProcessResult markdownElementsProcessResult,
-            OwnerRepoRefReadmePath ownerRepoRefReadmePath)
+            OwnerRepoRefReadmePath? ownerRepoRefReadmePath)
         {
             foreach (var linkInline in linkInlines)
             {
@@ -126,8 +140,11 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
                     }
                 }
 
-                var urlSpan = linkInline.Reference != null ? linkInline.Reference.UrlSpan : linkInline.UrlSpan;
-                ProcessInlineUrl(linkInline.Url, linkInline.IsImage, ownerRepoRefReadmePath, urlSpan, markdownElementsProcessResult.AddSourceReplacement);
+                if (ownerRepoRefReadmePath != null)
+                {
+                    var urlSpan = linkInline.Reference != null ? linkInline.Reference.UrlSpan : linkInline.UrlSpan;
+                    ProcessInlineUrl(linkInline.Url, linkInline.IsImage, ownerRepoRefReadmePath, urlSpan, markdownElementsProcessResult.AddSourceReplacement);
+                }
             }
         }
 

@@ -43,20 +43,16 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
         }
 
         // the githubRef is the branch, tag or commit sha, if null the master branch is used
-        public ReadmeRewriterResult? Rewrite(
+        public ReadmeRewriterResult Rewrite(
+            RewriteTagsOptions rewriteTagsOptions,
             string readme,
             string readmeRelativePath,
             string githubRepoUrl,
             string? githubRef = null,
-            RewriteTagsOptions rewriteTagsOptions = RewriteTagsOptions.All,
             RemoveReplaceSettings? removeReplaceSettings = null)
         {
             OwnerRepoRefReadmePath? ownerRepoRefReadmePath = OwnerRepoRefReadmePath.Create(githubRepoUrl, githubRef, readmeRelativePath);
-            if (ownerRepoRefReadmePath == null)
-            {
-                return null;
-            }
-
+            
             if (removeReplaceSettings != null)
             {
                 ApplyGithubReplacementText(removeReplaceSettings.RemovalsOrReplacements, ownerRepoRefReadmePath, readmeRelativePath);
@@ -66,23 +62,37 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
             return Rewrite(readme, ownerRepoRefReadmePath, rewriteTagsOptions);
         }
 
-        private void ApplyGithubReplacementText(List<RemovalOrReplacement> removalsOrReplacements, OwnerRepoRefReadmePath ownerRepoRefReadmePath, string readmeRelativePath)
+        private void ApplyGithubReplacementText(List<RemovalOrReplacement> removalsOrReplacements, OwnerRepoRefReadmePath? ownerRepoRefReadmePath, string readmeRelativePath)
         {
-            removalsOrReplacements.Where(removalOrReplacement => removalOrReplacement.ReplacementText != null && removalOrReplacement.ReplacementText.Contains(GithubReadmeMarker)).ToList().ForEach(replacement =>
+            if (ownerRepoRefReadmePath != null)
             {
-                var url = gitHubUrlHelper.GetAbsoluteOrGitHubAbsoluteUrl(readmeRelativePath, ownerRepoRefReadmePath, false);
-                replacement.ReplacementText = replacement.ReplacementText!.Replace(GithubReadmeMarker, url);
-            });
+                removalsOrReplacements.Where(removalOrReplacement => removalOrReplacement.ReplacementText != null && removalOrReplacement.ReplacementText.Contains(GithubReadmeMarker)).ToList().ForEach(replacement =>
+                {
+                    var url = gitHubUrlHelper.GetAbsoluteOrGitHubAbsoluteUrl(readmeRelativePath, ownerRepoRefReadmePath, false);
+                    replacement.ReplacementText = replacement.ReplacementText!.Replace(GithubReadmeMarker, url);
+                });
+            }
         }
 
-        private ReadmeRewriterResult Rewrite(string readme, OwnerRepoRefReadmePath ownerRepoRefReadmePath, RewriteTagsOptions rewriteTagsOptions)
+        private ReadmeRewriterResult Rewrite(string readme, OwnerRepoRefReadmePath? ownerRepoRefReadmePath, RewriteTagsOptions rewriteTagsOptions)
         {
+            var unsupportedRepo = ownerRepoRefReadmePath == null;
             var relevantMarkdownElements = rewritableMarkdownElementsProvider.GetRelevantMarkdownElementsWithSourceLocation(readme, rewriteTagsOptions == RewriteTagsOptions.None);
+            var hasUnsupportedHTML = false;
+            if(rewriteTagsOptions.HasFlag(RewriteTagsOptions.Error))
+            {
+                hasUnsupportedHTML = relevantMarkdownElements.HtmlInlines.Any() | relevantMarkdownElements.HtmlBlocks.Any();
+                relevantMarkdownElements.RemoveHTML();
+            }
 
             var markdownElementsProcessResult = readmeMarkdownElementsProcessor.Process(relevantMarkdownElements, ownerRepoRefReadmePath, rewriteTagsOptions);
-
-            var rewrittenReadme = readmeReplacer.Replace(readme, markdownElementsProcessResult.SourceReplacements);
-            return new ReadmeRewriterResult(rewrittenReadme, markdownElementsProcessResult.UnsupportedImageDomains);
+            string? rewrittenReadme = null;
+            if (!hasUnsupportedHTML && !markdownElementsProcessResult.UnsupportedImageDomains.Any() && !unsupportedRepo)
+            {
+                rewrittenReadme = readmeReplacer.Replace(readme, markdownElementsProcessResult.SourceReplacements);
+            }
+            
+            return new ReadmeRewriterResult(rewrittenReadme, markdownElementsProcessResult.UnsupportedImageDomains, hasUnsupportedHTML, unsupportedRepo);
         }
     }
 }

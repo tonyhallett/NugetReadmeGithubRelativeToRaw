@@ -8,7 +8,7 @@ namespace NugetReadmeGithubRelativeToRaw
 {
     public class ReadmeRewriterTask : Microsoft.Build.Utilities.Task
     {
-        internal const RewriteTagsOptions DefaultRewriteTagsOptions = Rewriter.RewriteTagsOptions.All;
+        internal const RewriteTagsOptions DefaultRewriteTagsOptions = Rewriter.RewriteTagsOptions.Error;
 
         [Required]
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
@@ -31,7 +31,7 @@ namespace NugetReadmeGithubRelativeToRaw
 
         internal IIOHelper IOHelper { get; set; } = InputOutputHelper.Instance;
 
-        internal IMessageProvider MessageProvider { get; set; } = new MessageProvider();
+        internal IMessageProvider MessageProvider { get; set; } = NugetReadmeGithubRelativeToRaw.MessageProvider.Instance;
 
         internal IReadmeRewriter ReadmeRewriter { get; set; } = new ReadmeRewriter();
 
@@ -60,7 +60,9 @@ namespace NugetReadmeGithubRelativeToRaw
 
         private void TryRewrite(string readmeContents, string readmeRelativePath)
         {
-            var removeReplaceSettingsResult = RemoveReplaceSettingsProvider.Provide(RemoveReplaceItems, RemoveCommentIdentifiers);
+            var removeReplaceSettingsResult = RemoveReplaceSettingsProvider.Provide(
+                RemoveReplaceItems, 
+                RemoveCommentIdentifiers);
             if (removeReplaceSettingsResult.Errors.Count > 0)
             {
                 foreach(var error in removeReplaceSettingsResult.Errors)
@@ -77,19 +79,34 @@ namespace NugetReadmeGithubRelativeToRaw
         private void Rewrite(string readmeContents, string readmeRelativePath, RemoveReplaceSettings? removeReplaceSettings)
         {
             var readmeRewriterResult = ReadmeRewriter.Rewrite(
+                GetRewriteTagsOptions(),
                 readmeContents,
                 readmeRelativePath,
                 RepositoryUrl,
                 RepositoryBranch,
-                GetRewriteTagsOptions(),
                 removeReplaceSettings);
-            if (readmeRewriterResult != null)
+
+            if (readmeRewriterResult.UnsupportedImageDomains.Count > 0)
             {
-                ProcessReadmeWriteResult(readmeRewriterResult);
+                foreach (var unsupportedImageDomain in readmeRewriterResult.UnsupportedImageDomains)
+                {
+                    Log.LogError(MessageProvider.UnsupportedImageDomain(unsupportedImageDomain));
+                }
             }
-            else
+
+            if (readmeRewriterResult.HasUnsupportedHTML)
+            {
+                Log.LogError(MessageProvider.ReadmeHasUnsupportedHTML());
+            }
+
+            if (readmeRewriterResult.UnsupportedRepo)
             {
                 Log.LogError(MessageProvider.CouldNotParseRepositoryUrl(RepositoryUrl));
+            }
+
+            if (!Log.HasLoggedErrors)
+            {
+                IOHelper.WriteAllText(OutputReadme, readmeRewriterResult.RewrittenReadme!);
             }
         }
 
@@ -108,21 +125,6 @@ namespace NugetReadmeGithubRelativeToRaw
                 }
             }
             return options;
-        }
-
-        private void ProcessReadmeWriteResult(ReadmeRewriterResult readmeRewriterResult)
-        {
-            if (readmeRewriterResult.UnsupportedImageDomains.Count > 0)
-            {
-                foreach (var unsupportedImageDomain in readmeRewriterResult.UnsupportedImageDomains)
-                {
-                    Log.LogError(MessageProvider.UnsupportedImageDomain(unsupportedImageDomain));
-                }
-            }
-            else
-            {
-                IOHelper.WriteAllText(OutputReadme, readmeRewriterResult.RewrittenReadme);
-            }
         }
     }
 }

@@ -16,6 +16,7 @@ namespace UnitTests
             var expectedReadme = expectsRewrites ? expectedRewrittenReadme : readmeContent;
             Assert.Multiple(() =>
             {
+                Assert.That(result.HasUnsupportedHTML, Is.False);
                 Assert.That(expectedReadme, Is.EqualTo(result.RewrittenReadme));
                 Assert.That(result.UnsupportedImageDomains, Is.Empty);
             });
@@ -30,6 +31,7 @@ namespace UnitTests
             var expectedReadme = CreateMarkdownImage("https://raw.githubusercontent.com/username/reponame/main/relative.png", "alttext");
             Assert.Multiple(() =>
             {
+                Assert.That(result.HasUnsupportedHTML, Is.False);
                 Assert.That(expectedReadme, Is.EqualTo(result.RewrittenReadme));
                 Assert.That(result.UnsupportedImageDomains, Is.Empty);
             });
@@ -43,10 +45,10 @@ namespace UnitTests
 
             Assert.Multiple(() =>
             {
-                Assert.That(readmeContent, Is.EqualTo(result.RewrittenReadme));
-                Assert.That(result.UnsupportedImageDomains, Has.Count.EqualTo(1));
+                Assert.That(result.HasUnsupportedHTML, Is.False);
+                Assert.That(result.RewrittenReadme, Is.Null);
+                Assert.That(result.UnsupportedImageDomains.Single(), Is.EqualTo("unsupported.com"));
             });
-            Assert.That(result.UnsupportedImageDomains, Does.Contain("unsupported.com"));
         }
 
         [TestCase(nameof(RewriteTagsOptions.All), true)]
@@ -59,7 +61,13 @@ namespace UnitTests
 
             var expectedRewrittenReadme = "Line1\\";
             var expectedReadme = expectsRewrites ? expectedRewrittenReadme : readmeContent;
-            Assert.That(result.RewrittenReadme, Is.EqualTo(expectedReadme));
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.HasUnsupportedHTML, Is.False);
+                Assert.That(result.RewrittenReadme, Is.EqualTo(expectedReadme));
+            });
+            
         }
 
         [TestCase("<br>")]
@@ -71,7 +79,13 @@ namespace UnitTests
             var result = RewriteUserRepoMainReadMe(readmeContent, RewriteTagsOptions.All);
 
             var expectedReadme = "Line1\\";
-            Assert.That(result.RewrittenReadme, Is.EqualTo(expectedReadme));
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.RewrittenReadme, Is.EqualTo(expectedReadme));
+                Assert.That(result.HasUnsupportedHTML, Is.False);
+                Assert.That(result.RewrittenReadme, Is.EqualTo(expectedReadme));
+            });
         }
 
         [TestCase(nameof(RewriteTagsOptions.All), true, true)]
@@ -86,7 +100,11 @@ namespace UnitTests
             
             var expectedRewrittenReadme = @"[TextContent](https://github.com/username/reponame/blob/main/abc.html)";
             var expectedReadme = expectsRewrites ? expectedRewrittenReadme : readmeContent;
-            Assert.That(expectedReadme, Is.EqualTo(result.RewrittenReadme));
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.HasUnsupportedHTML, Is.False);
+                Assert.That(expectedReadme, Is.EqualTo(result.RewrittenReadme));
+            });
         }
 
         [Test]
@@ -101,7 +119,15 @@ namespace UnitTests
             {
                 Assert.That(result.RewrittenReadme, Is.EqualTo(expectedReadme));
                 Assert.That(result.UnsupportedImageDomains, Is.Empty);
+                Assert.That(result.HasUnsupportedHTML, Is.False);
             });
+        }
+
+        [Test]
+        public void Should_Have_UnsupportedHTML_When_RewriteTagsOptions_Error_And_HTML_In_Readme()
+        {
+            var result = RewriteUserRepoMainReadMe("<br/>", RewriteTagsOptions.Error);
+            Assert.That(result.HasUnsupportedHTML, Is.True);
         }
     }
 }

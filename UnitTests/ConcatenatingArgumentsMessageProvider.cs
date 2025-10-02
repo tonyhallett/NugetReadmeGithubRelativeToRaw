@@ -14,18 +14,14 @@ namespace UnitTests
 
         public string ReadmeFileDoesNotExist(string readmeFilePath) => readmeFilePath;
 
-        public string RemoveCommentsIdentifiersFormat()
-        {
-            throw new NotImplementedException();
-        }
+        public string RemoveCommentsIdentifiersFormat() => nameof(RemoveCommentsIdentifiersFormat);
 
-        public string RemoveCommentsIdentifiersSameStartEnd()
-        {
-            throw new NotImplementedException();
-        }
+        public string RemoveCommentsIdentifiersSameStartEnd() => nameof(RemoveCommentsIdentifiersSameStartEnd);
 
         public string RequiredMetadata(string metadataName, string itemSpec) => $"{metadataName}{itemSpec}";
 
         public string UnsupportedCommentOrRegex(string itemSpec) => itemSpec;
+
+        public string ReadmeHasUnsupportedHTML() => nameof(ReadmeHasUnsupportedHTML);
     }
 }

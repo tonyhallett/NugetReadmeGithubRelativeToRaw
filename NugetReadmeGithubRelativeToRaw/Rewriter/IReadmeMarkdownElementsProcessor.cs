@@ -4,7 +4,7 @@
         
         IMarkdownElementsProcessResult Process(
             RelevantMarkdownElements relevantMarkdownElements, 
-            OwnerRepoRefReadmePath ownerRepoRefReadmePath, 
+            OwnerRepoRefReadmePath? ownerRepoRefReadmePath, 
             RewriteTagsOptions rewriteTagsOptions);
     
     }

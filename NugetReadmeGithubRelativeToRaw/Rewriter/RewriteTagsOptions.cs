@@ -9,6 +9,7 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
         RewriteImgTagsForSupportedDomains = 1,
         RewriteATags = 2,
         RewriteBrTags = 4,
-        All = RewriteImgTagsForSupportedDomains | RewriteATags | RewriteBrTags
+        All = RewriteImgTagsForSupportedDomains | RewriteATags | RewriteBrTags,
+        Error = 1 << 30
     }
 }
