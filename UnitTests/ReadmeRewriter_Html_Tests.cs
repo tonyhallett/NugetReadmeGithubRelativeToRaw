@@ -38,16 +38,24 @@ namespace UnitTests
         }
 
         [Test]
-        public void Should_Not_Rewrite_Img_For_Unsupported_Domains()
+        public void Should_Not_Rewrite_Imgs_For_Unsupported_Domains()
         {
-            var readmeContent = CreateImage("altext", "https://unsupported.com/a.png");
+            var unsupportedImage1 = CreateImage("altext", "https://unsupported.com/a.png");
+            var unsupportedImage2= CreateImage("altext", "https://unsupported2.com/a.png");
+            var readmeContent = @$"
+{unsupportedImage1}
+
+{unsupportedImage2}
+";
+            
             var result = RewriteUserRepoMainReadMe(readmeContent);
 
             Assert.Multiple(() =>
             {
                 Assert.That(result.HasUnsupportedHTML, Is.False);
                 Assert.That(result.RewrittenReadme, Is.Null);
-                Assert.That(result.UnsupportedImageDomains.Single(), Is.EqualTo("unsupported.com"));
+                Assert.That(result.UnsupportedImageDomains[0], Is.EqualTo("unsupported.com"));
+                Assert.That(result.UnsupportedImageDomains[1], Is.EqualTo("unsupported2.com"));
             });
         }
 

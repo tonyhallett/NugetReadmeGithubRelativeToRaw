@@ -97,10 +97,11 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
                             }
                         }else
                         {
-                            if(ownerRepoRefReadmePath == null)
+                            if (ownerRepoRefReadmePath == null)
                             {
                                 continue;
                             }
+
                             src = gitHubUrlHelper.GetGitHubAbsoluteUrl(src, ownerRepoRefReadmePath, true)!;
                         }
                         var imgTagReplacement = $"![{srcAlt.Alt}]({src})";
