@@ -2,12 +2,23 @@ using NugetReadmeGithubRelativeToRaw.Rewriter;
 
 namespace UnitTests
 {
-    internal class ReadmeRewriter_Removal_Replacement_Tests
+    internal class ReadmeRewriter_RemoveReplacer_Tests
     {
         private RemoveReplacer _removeReplacer = new(new RemoveReplaceRegexesFactory());
 
         [SetUp]
         public void Setup() => _removeReplacer = new RemoveReplacer(new RemoveReplaceRegexesFactory());
+
+        [Test]
+        public void Should_Not_When_No_Regexes_From_RemoveReplaceSettings()
+        {
+            var readMeContent = @"
+readme not looked at
+";
+            var removeReplaceSettings = new RemoveReplaceSettings(null, []);
+            var notReplaced = _removeReplacer.RemoveReplace(readMeContent, removeReplaceSettings);
+            Assert.That(notReplaced, Is.EqualTo(readMeContent));
+        }
 
         [Test]
         public void Should_Remove_Commented_Sections()

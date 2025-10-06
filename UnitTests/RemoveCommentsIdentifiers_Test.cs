@@ -41,6 +41,11 @@ namespace UnitTests
                 throw new NotImplementedException();
             }
 
+            public string SameStartEndMetadata(string itemSpec)
+            {
+                throw new NotImplementedException();
+            }
+
             public string UnsupportedCommentOrRegex(string itemSpec)
             {
                 throw new NotImplementedException();
@@ -57,6 +62,21 @@ namespace UnitTests
         public void SetUp()
         {
             _removeCommentsIdentifiersParser = new RemoveCommentsIdentifiersParser(new RemoveCommentsMessageProvider());
+        }
+
+        [TestCase((string?)null)]
+        [TestCase("")]
+        public void Should_Be_Null_When_Null_Or_Empty(string? nullOrEmpty)
+        {
+            var addError = new CollectingAddError();
+            var removeCommentIdentifiers = _removeCommentsIdentifiersParser.Parse(nullOrEmpty, addError);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(addError.Errors, Is.Empty);
+                Assert.That(removeCommentIdentifiers, Is.Null);
+            });
+            
         }
 
 

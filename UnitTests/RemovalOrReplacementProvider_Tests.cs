@@ -17,7 +17,9 @@ namespace UnitTests
         {
             _mockIOHelper = new Mock<IIOHelper>();
             _mockMessageProvider = new Mock<IMessageProvider>();
-            _removalOrReplacementProvider = new RemovalOrReplacementProvider(_mockIOHelper.Object, _mockMessageProvider.Object);
+            _removalOrReplacementProvider = new RemovalOrReplacementProvider(
+                _mockIOHelper.Object, 
+                _mockMessageProvider.Object);
         }
 
         [TestCase(CommentOrRegex.Comment)]
@@ -62,6 +64,30 @@ namespace UnitTests
             {
                 Assert.That(removalOrReplacement, Is.Null);
                 Assert.That(addError.Single(), Is.EqualTo("unsupported"));
+            });
+        }
+
+        [Test]
+        public void Should_Have_Error_When_Start_End_Same()
+        {
+            _mockMessageProvider.Setup(messageProvider => messageProvider.SameStartEndMetadata(
+    "itemspec")).Returns("samestartend");
+            var removeReplaceMetadata = new RemoveReplaceMetadata
+            {
+                CommentOrRegex = nameof(CommentOrRegex.Comment),
+                Start = "same",
+                End = "same",
+                ReplacementText = "..."
+            };
+            var taskItem = new TaskItem("itemspec");
+
+            var addError = new CollectingAddError();
+            var removalOrReplacement = _removalOrReplacementProvider.Provide(new MetadataItem(removeReplaceMetadata, taskItem), addError);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(removalOrReplacement, Is.Null);
+                Assert.That(addError.Single(), Is.EqualTo("samestartend"));
             });
         }
 
@@ -151,7 +177,6 @@ namespace UnitTests
                 Assert.That(addError.Errors, Is.Empty);
             });
         }
-
 
         [Test]
         public void Should_Use_ReplacementText_From_FileSystem_When_No_Metadata()

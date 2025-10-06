@@ -5,7 +5,8 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
 {
     internal interface IHtmlFragmentParser
     {
-        INode Parse(HtmlBlock htmlBlock);
+        T Parse<T>(HtmlBlock htmlBlock) where T : INode;
+
         INode Parse(string fragment);
     }
 }

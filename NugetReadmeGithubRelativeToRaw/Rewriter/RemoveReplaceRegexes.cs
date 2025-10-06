@@ -18,6 +18,7 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
             this.regexRemovalOrReplacements = regexRemovalOrReplacements;
             _removeCommentRegexes = removeCommentRegexes;
         }
+
         public bool Any => (_removeCommentRegexes != null) || (regexRemovalOrReplacements.Count > 0);
 
         public MatchStartResult MatchStart(string text)

@@ -27,6 +27,11 @@ namespace NugetReadmeGithubRelativeToRaw
         public string RequiredMetadata(string metadataName, string itemSpec)
             => $"Metadata, {metadataName}, is required on item {MsBuildPropertyItemNames.RemoveReplaceItem} '{itemSpec}'.";
 
+        public string SameStartEndMetadata(string itemSpec)
+        {
+            return $"{nameof(RemoveReplaceMetadata.Start)} and {nameof(RemoveReplaceMetadata.End)} metadata on item {MsBuildPropertyItemNames.RemoveReplaceItem} '{itemSpec}' are the same value";
+        }
+
         public string UnsupportedCommentOrRegex(string itemSpec) 
             => $"Unsupported {nameof(RemoveReplaceMetadata.CommentOrRegex)} metadata on item {MsBuildPropertyItemNames.RemoveReplaceItem} '{itemSpec}'. Supported values {nameof(CommentOrRegex.Comment)} | {nameof(CommentOrRegex.Regex)}";
 

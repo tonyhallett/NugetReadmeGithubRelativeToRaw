@@ -2,21 +2,21 @@
 
 namespace NugetReadmeGithubRelativeToRaw.Rewriter
 {
-    internal class DefinedSrcAlt
+    internal class ImgSrcAlt
     {
-        public DefinedSrcAlt(string src, string alt)
+        public ImgSrcAlt(string src, string? alt)
         {
             Src = src;
-            Alt = alt;
+            Alt = alt ?? "";
         }
 
-        public static DefinedSrcAlt? TryGet(IHtmlImageElement imgElement)
+        public static ImgSrcAlt? TryGet(IHtmlImageElement imgElement)
         {
             var src = imgElement.GetAttribute("src");
             var alt = imgElement.GetAttribute("alt");
-            if (!string.IsNullOrWhiteSpace(src) && !string.IsNullOrWhiteSpace(alt))
+            if (!string.IsNullOrWhiteSpace(src))
             {
-                return new DefinedSrcAlt(src!, alt!);
+                return new ImgSrcAlt(src!, alt);
             }
             return null;
         }

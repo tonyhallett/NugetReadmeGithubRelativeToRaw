@@ -63,7 +63,7 @@ namespace NugetReadmeGithubRelativeToRaw
             var end = string.IsNullOrEmpty(endRaw) ? null : endRaw;
             if (start == end)
             {
-                addError.AddError($"If End metadata is specified on RemoveReplace item '{metadataItem.TaskItem.ItemSpec}' it must be different to Start.");
+                addError.AddError(_messageProvider.SameStartEndMetadata(metadataItem.TaskItem.ItemSpec));
                 return null;
             }
 

@@ -31,19 +31,13 @@ namespace NugetReadmeGithubRelativeToRaw.MSBuildHelpers
         {
             if (!properties.TryGetValue(type, out var requiredProps))
             {
-                var properties = type.GetProperties().Where(p => p.GetCustomAttribute<IgnoreMetadataAttribute>() == null);
-                if(typeof(IRequiredMetadata).IsAssignableFrom(type))
-                {
-                    requiredProps = properties.Select(p =>
-                        {
-                            var isRequired = p.GetCustomAttribute<RequiredMetadataAttribute>() != null;
-                            return new RequiredPropertyInfo(p, isRequired);
-                        }).ToList();
-                }
-                else
-                {
-                    requiredProps = properties.Select(p => new RequiredPropertyInfo(p, false)).ToList();
-                }
+                var properties = type.GetProperties().Where(p => p.GetCustomAttribute<IgnoreMetadataAttribute>() == null && p.CanWrite);
+                requiredProps = properties.Select(p =>
+                    {
+                        var isRequired = p.GetCustomAttribute<RequiredMetadataAttribute>() != null;
+                        return new RequiredPropertyInfo(p, isRequired);
+                    }).ToList();
+
             }
 
             return requiredProps;

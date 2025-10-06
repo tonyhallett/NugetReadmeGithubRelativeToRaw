@@ -8,6 +8,8 @@ namespace NugetReadmeGithubRelativeToRaw
 
         string UnsupportedCommentOrRegex(string itemSpec);
 
+        string SameStartEndMetadata(string itemSpec);
+
         string RemoveCommentsIdentifiersFormat();
 
         string RemoveCommentsIdentifiersSameStartEnd();

@@ -4,7 +4,6 @@ using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using AngleSharp.Html.Dom;
 using NugetReadmeGithubRelativeToRaw.Rewriter.Validation;
-using AngleSharp.Dom;
 
 namespace NugetReadmeGithubRelativeToRaw.Rewriter
 {
@@ -37,6 +36,7 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
             {
                 ProcessHtmlInlines(relevantMarkdownElements.HtmlInlines, markdownElementsProcessResult, ownerRepoRefReadmePath, rewriteTagsOptions);
             }
+
             return markdownElementsProcessResult;
         }
 
@@ -81,38 +81,38 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
             OwnerRepoRefReadmePath? ownerRepoRefReadmePath, 
             RewriteTagsOptions rewriteTagsOptions)
         {
-            foreach (var htmlBlock in htmlBlocks)
+            if (!rewriteTagsOptions.HasFlag(RewriteTagsOptions.RewriteImgTagsForSupportedDomains))
             {
-                var root = htmlFragmentParser.Parse(htmlBlock);
+                return;
+            }
 
-                switch (root.NodeName.ToLowerInvariant())
+            // could have error for img without src / alt - and can you have missing alt in markdown
+            htmlBlocks.SelectWithSourceNotNull(htmlBlock => htmlFragmentParser.Parse<IHtmlImageElement>(htmlBlock))
+                .SelectWithSourceNotNull(htmlImageElement => ImgSrcAlt.TryGet(htmlImageElement))
+                .ProcessSourceResult(Process);
+
+            void Process(ImgSrcAlt srcAlt,HtmlBlock htmlBlock)
+            {
+                var src = srcAlt.Src;
+                if (gitHubUrlHelper.GetAbsoluteUri(src) is Uri absoluteUri)
                 {
-                    case "img" when rewriteTagsOptions.HasFlag(RewriteTagsOptions.RewriteImgTagsForSupportedDomains) && DefinedSrcAlt.TryGet((root as IHtmlImageElement)!) is DefinedSrcAlt srcAlt:
-                        var src = srcAlt.Src;
-                        if (gitHubUrlHelper.GetAbsoluteUri(src) is Uri absoluteUri){
-                            if (!nugetImageDomainValidator.IsTrustedImageDomain(absoluteUri.OriginalString))
-                            {
-                                markdownElementsProcessResult.AddUnsupportedImageDomain(absoluteUri.Host);
-                                continue;
-                            }
-                        }else
-                        {
-                            if (ownerRepoRefReadmePath == null)
-                            {
-                                continue;
-                            }
+                    if (!nugetImageDomainValidator.IsTrustedImageDomain(absoluteUri.OriginalString))
+                    {
+                        markdownElementsProcessResult.AddUnsupportedImageDomain(absoluteUri.Host);
+                        return;
+                    }
+                }
+                else
+                {
+                    if (ownerRepoRefReadmePath == null)
+                    {
+                        return;
+                    }
 
-                            src = gitHubUrlHelper.GetGitHubAbsoluteUrl(src, ownerRepoRefReadmePath, true)!;
-                        }
-                        var imgTagReplacement = $"![{srcAlt.Alt}]({src})";
-                        AddSourceReplacement(imgTagReplacement);
-                        break;
+                    src = gitHubUrlHelper.GetGitHubAbsoluteUrl(src, ownerRepoRefReadmePath, true)!;
                 }
 
-                void AddSourceReplacement(string replacementText)
-                {
-                    markdownElementsProcessResult.AddSourceReplacement(htmlBlock.Span, replacementText);
-                }
+                markdownElementsProcessResult.AddSourceReplacement(htmlBlock.Span, $"![{srcAlt.Alt}]({src})");
             }
         }
 

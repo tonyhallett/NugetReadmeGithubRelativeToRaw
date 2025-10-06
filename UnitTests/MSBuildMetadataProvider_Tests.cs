@@ -1,4 +1,6 @@
-﻿using Microsoft.Build.Utilities;
+﻿using Microsoft.Build.Framework;
+using Microsoft.Build.Utilities;
+using Moq;
 using NugetReadmeGithubRelativeToRaw;
 using NugetReadmeGithubRelativeToRaw.MSBuildHelpers;
 using NugetReadmeGithubRelativeToRaw.Rewriter;
@@ -30,6 +32,27 @@ namespace UnitTests
                 Assert.That(removeReplaceMetadata.ReplacementText, Is.Empty);
                 Assert.That(removeReplaceMetadata.MissingMetadataNames.Single(), Is.EqualTo(nameof(RemoveReplaceMetadata.Start)));
             });
+        }
+
+        private sealed class MetadataIgnore : IRequiredMetadata
+        {
+            [IgnoreMetadata]
+            public string? Ignored { get; set; }
+            public string? GetterOnly { get; }
+
+            public void AddMissingMetadataName(string metadataName)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        [Test]
+        public void Should_Ignore_Read_Only_Or_IgnoreMetadata_Properties()
+        {
+            var msBuildMetadataProvider = new MSBuildMetadataProvider();
+            
+            var mockTaskItem = new Mock<ITaskItem>(MockBehavior.Strict);
+            msBuildMetadataProvider.GetCustomMetadata<MetadataIgnore>(mockTaskItem.Object);
         }
     }
 }

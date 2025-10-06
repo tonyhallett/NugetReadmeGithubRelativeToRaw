@@ -23,5 +23,7 @@ namespace UnitTests
         public string UnsupportedCommentOrRegex(string itemSpec) => itemSpec;
 
         public string ReadmeHasUnsupportedHTML() => nameof(ReadmeHasUnsupportedHTML);
+
+        public string SameStartEndMetadata(string itemSpec) => itemSpec;
     }
 }

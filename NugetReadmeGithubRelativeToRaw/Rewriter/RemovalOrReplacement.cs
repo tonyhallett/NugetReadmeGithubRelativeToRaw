@@ -2,8 +2,6 @@
 {
     internal class RemovalOrReplacement
     {
-        public string? StartRegex { get; }
-
         public RemovalOrReplacement(
             CommentOrRegex commentOrRegex,
             string start, 
@@ -17,8 +15,11 @@
         }
 
         public CommentOrRegex CommentOrRegex { get; }
+
         public string Start { get; }
+        
         public string? End { get; }
+        
         public string? ReplacementText { get; set; }
     }
 }

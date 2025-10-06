@@ -64,10 +64,14 @@ namespace UnitTests
         [TestCase(nameof(RewriteTagsOptions.None), false)]
         public void Should_Rewrite_Br_When_RewriteTagsOptions_RewriteBrTags(string rewriteTagsOptions, bool expectsRewrites)
         {
-            var readmeContent = @"Line1<br/>";
+            var readmeContent = @"
+Line1<br/>
+Line2<br/>";
             var result = RewriteUserRepoMainReadMe(readmeContent, rewriteTagsOptions);
 
-            var expectedRewrittenReadme = "Line1\\";
+            var expectedRewrittenReadme = @"
+Line1\
+Line2\";
             var expectedReadme = expectsRewrites ? expectedRewrittenReadme : readmeContent;
 
             Assert.Multiple(() =>

@@ -5,8 +5,11 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
     internal class OwnerRepoRefReadmePath
     {
         public string OwnerRepoUrlPart { get; }
+
         public string Ref { get; }
+        
         public string ReadmeRelativePath { get; }
+        
         private OwnerRepoRefReadmePath(string ownerRepoUrlPart, string @ref, string readmeRelativePath)
         {
             OwnerRepoUrlPart = ownerRepoUrlPart;

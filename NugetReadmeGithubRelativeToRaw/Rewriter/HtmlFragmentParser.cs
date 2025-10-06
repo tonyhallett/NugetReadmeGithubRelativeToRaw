@@ -8,9 +8,10 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
 {
     internal class HtmlFragmentParser : IHtmlFragmentParser
     {
-        public INode Parse(HtmlBlock htmlBlock)
+        public T Parse<T>(HtmlBlock htmlBlock) where T : INode
         {
-            return Parse(htmlBlock.Lines.ToString());
+            var node =  Parse(htmlBlock.Lines.ToString());
+            return (T)node;
         }
 
         public INode Parse(string fragment)

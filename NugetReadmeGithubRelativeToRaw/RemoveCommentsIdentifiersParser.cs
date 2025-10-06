@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using NugetReadmeGithubRelativeToRaw.Rewriter;
+﻿using NugetReadmeGithubRelativeToRaw.Rewriter;
 
 namespace NugetReadmeGithubRelativeToRaw
 {
@@ -11,7 +10,7 @@ namespace NugetReadmeGithubRelativeToRaw
 
         public RemoveCommentIdentifiers? Parse(string? removeCommentIdentifiers, IAddError addError)
         {
-            if (string.IsNullOrWhiteSpace(removeCommentIdentifiers))
+            if (string.IsNullOrEmpty(removeCommentIdentifiers))
             {
                 return null;
             }
