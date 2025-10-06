@@ -54,8 +54,7 @@ namespace UnitTests
             {
                 Assert.That(result.HasUnsupportedHTML, Is.False);
                 Assert.That(result.RewrittenReadme, Is.Null);
-                Assert.That(result.UnsupportedImageDomains[0], Is.EqualTo("unsupported.com"));
-                Assert.That(result.UnsupportedImageDomains[1], Is.EqualTo("unsupported2.com"));
+                Assert.That(result.UnsupportedImageDomains, Is.EqualTo(new List<string> { "unsupported.com", "unsupported2.com" }));
             });
         }
 

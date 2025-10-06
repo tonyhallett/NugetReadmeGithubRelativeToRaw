@@ -6,8 +6,9 @@
             RewriteTagsOptions rewriteTagsOptions,
             string readme, 
             string readmeRelativePath, 
-            string githubRepoUrl, 
-            string? githubRef = null, 
-            RemoveReplaceSettings? removeReplaceSettings = null);
+            string repoUrl, 
+            string? @ref, 
+            RemoveReplaceSettings? removeReplaceSettings,
+            IReadmeRelativeFileExists readmeRelativeFileExists);
     }
 }

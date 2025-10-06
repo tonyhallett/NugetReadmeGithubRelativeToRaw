@@ -6,19 +6,23 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
     {
         public ReadmeRewriterResult(
             string? rewrittenReadme, 
-            IEnumerable<string> unsupportedImageDomains, 
+            IEnumerable<string> unsupportedImageDomains,
+            IEnumerable<string> missingReadmeAssets,
             bool hasUnsupportedHTML,
             bool unsupportedRepo)
         {
             RewrittenReadme = rewrittenReadme;
-            UnsupportedImageDomains = new List<string>(unsupportedImageDomains);
+            UnsupportedImageDomains = unsupportedImageDomains;
+            MissingReadmeAssets = missingReadmeAssets;
             HasUnsupportedHTML = hasUnsupportedHTML;
             UnsupportedRepo = unsupportedRepo;
         }
 
         public string? RewrittenReadme { get; }
 
-        public IReadOnlyList<string> UnsupportedImageDomains { get; }
+        public IEnumerable<string> UnsupportedImageDomains { get; }
+
+        public IEnumerable<string> MissingReadmeAssets { get; }
 
         public bool HasUnsupportedHTML { get; }
 

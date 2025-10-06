@@ -23,5 +23,7 @@ namespace NugetReadmeGithubRelativeToRaw
         string CouldNotParseRewriteTagsOptionsUsingDefault(string propertyValue, RewriteTagsOptions defaultRewriteTagsOptions);
         
         string ReadmeHasUnsupportedHTML();
+
+        string MissingReadmeAsset(string missingReadmeAsset);
     }
 }

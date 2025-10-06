@@ -22,6 +22,11 @@ namespace UnitTests
                 throw new NotImplementedException();
             }
 
+            public string MissingReadmeAsset(string missingReadmeAsset)
+            {
+                throw new NotImplementedException();
+            }
+
             public string ReadmeFileDoesNotExist(string readmeFilePath)
             {
                 throw new NotImplementedException();

@@ -2,13 +2,13 @@
 
 namespace NugetReadmeGithubRelativeToRaw.Rewriter
 {
-    internal class GitHubUrlHelper : IGitHubUrlHelper
+    internal class RepoUrlHelper : IRepoUrlHelper
     {
-        public static GitHubUrlHelper Instance { get; } = new GitHubUrlHelper();
+        public static RepoUrlHelper Instance { get; } = new RepoUrlHelper();
 
-        public string? GetGitHubAbsoluteUrl(
+        public string? GetRepoAbsoluteUrl(
             string? url, 
-            OwnerRepoRefReadmePath ownerRepoRefReadmePath, 
+            RepoPaths repoPaths, 
             bool isImage)
         {
             if (url == null || IsAbsolute(url))
@@ -18,8 +18,7 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
 
             url = url.Trim();
 
-            string urlWithoutPath = isImage ? $"https://raw.githubusercontent.com/{ownerRepoRefReadmePath.OwnerRepoUrlPart}/{ownerRepoRefReadmePath.Ref}" :
-                $"https://github.com/{ownerRepoRefReadmePath.OwnerRepoUrlPart}/blob/{ownerRepoRefReadmePath.Ref}";
+            string urlWithoutPath = isImage ? repoPaths.ImageBasePath : repoPaths.LinkBasePath;
 
             // repo relative
             if (url.StartsWith("/"))
@@ -28,7 +27,7 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
             }
 
             // readme directory relative
-            var readmeRelativePath = ownerRepoRefReadmePath.ReadmeRelativePath;
+            var readmeRelativePath = repoPaths.ReadmeRelativePath;
             if (!readmeRelativePath.StartsWith("/"))
             {
                 readmeRelativePath = "/" + readmeRelativePath;
@@ -38,14 +37,14 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
             return new Uri(readmeUri, url).OriginalString;
         }
 
-        public string GetAbsoluteOrGitHubAbsoluteUrl(string url, OwnerRepoRefReadmePath ownerRepoRefReadmePath, bool isImage)
+        public string GetAbsoluteOrRepoAbsoluteUrl(string url, RepoPaths repoPaths, bool isImage)
         {
             if (IsAbsolute(url))
             {
                 return url!;
             }
 
-            return GetGitHubAbsoluteUrl(url, ownerRepoRefReadmePath, isImage)!;
+            return GetRepoAbsoluteUrl(url, repoPaths, isImage)!;
         }
 
         public Uri? GetAbsoluteUri(string? url)

@@ -14,6 +14,8 @@ namespace NugetReadmeGithubRelativeToRaw
         public string CouldNotParseRewriteTagsOptionsUsingDefault(string propertyValue, RewriteTagsOptions defaultRewriteTagsOptions) 
             => $"Could not parse the {MsBuildPropertyItemNames.RewriteTagsOptionsProperty}: {propertyValue}. Using the default: {defaultRewriteTagsOptions}";
 
+        public string MissingReadmeAsset(string missingReadmeAsset) => $"Missing readme asset - {missingReadmeAsset}";
+
         public string ReadmeFileDoesNotExist(string readmeFilePath) => $"Readme file does not exist at '{readmeFilePath}'";
 
         public string ReadmeHasUnsupportedHTML() => "Readme has unsupported HTML";

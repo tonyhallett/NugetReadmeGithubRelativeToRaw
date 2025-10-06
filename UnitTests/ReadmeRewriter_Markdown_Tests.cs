@@ -1,3 +1,5 @@
+using Moq;
+using NugetReadmeGithubRelativeToRaw;
 using NugetReadmeGithubRelativeToRaw.Rewriter;
 using NugetReadmeGithubRelativeToRaw.Rewriter.Validation;
 
@@ -11,10 +13,10 @@ namespace UnitTests
         public void Should_Rewrite_Relative_Markdown_Image(string relativePath, string username, string reponame,string? repoRef)
         {
             var readmeContent = CreateMarkdownImage(relativePath);
-            var repoUrl = CreateRepositoryUrl(username, reponame);
+            var repoUrl = CreateGitHubRepositoryUrl(username, reponame);
             var expectedRepoRef = repoRef ?? "master";
             var expectedRedmeRewritten = CreateMarkdownImage($"https://raw.githubusercontent.com/{username}/{reponame}/{expectedRepoRef}/{relativePath}");
-            var readmeRewritten = ReadmeRewriter.Rewrite(RewriteTagsOptions.None, readmeContent, "/readme.md", repoUrl, repoRef)!.RewrittenReadme;
+            var readmeRewritten = ReadmeRewriter.Rewrite(RewriteTagsOptions.None, readmeContent, "/readme.md", repoUrl, repoRef, null, DummyReadmeRelativeFileExists)!.RewrittenReadme;
             Assert.That(readmeRewritten, Is.EqualTo(expectedRedmeRewritten));
         }
 
@@ -114,7 +116,7 @@ namespace UnitTests
 Intro
 # Github only
 ";
-            var githubReplacementLine = $"For full details visit [GitHub]({ReadmeRewriter.GithubReadmeMarker})";
+            var githubReplacementLine = $"For full details visit [GitHub]({ReadmeRewriter.ReadmeMarker})";
             RemovalOrReplacement githubReplacement = new RemovalOrReplacement(CommentOrRegex.Regex, "# Github only", null, githubReplacementLine);
             var removeReplaceSettings = new RemoveReplaceSettings(null, [githubReplacement]);
 
@@ -125,6 +127,32 @@ Intro
 For full details visit [GitHub](https://github.com/username/reponame/blob/main/readme.md)";
 
             Assert.That(rewrittenReadMe, Is.EqualTo(expectedReadMeContent));
+        }
+
+        [Test]
+        public void Should_Check_That_Readme_Asset_Exists()
+        {
+            var readmeContent = CreateMarkdownImage("/relativePath");
+            var repoUrl = CreateGitHubRepositoryUrl("user", "repo");
+            _= ReadmeRewriter.Rewrite(RewriteTagsOptions.None, readmeContent, "/readme.md", repoUrl, null, null, DummyReadmeRelativeFileExists);
+
+            Assert.That(DummyReadmeRelativeFileExists.RelativePath, Is.EqualTo("/relativePath"));
+        }
+
+        [Test]
+        public void Should_Have_MissingReadmeAssets_When_RelativeReadmeRelativeFileExists_False()
+        {
+            DummyReadmeRelativeFileExists.FileExists = false;
+            var relativeImage = CreateMarkdownImage("/relativeImagePath");
+            var relativeLink = CreateMarkdownLink("/relativeLinkPath");
+            var readmeContent = $@"
+{relativeImage}  
+{relativeLink}
+";
+            var repoUrl = CreateGitHubRepositoryUrl("user", "repo");
+            var result = ReadmeRewriter.Rewrite(RewriteTagsOptions.None, readmeContent, "/readme.md", repoUrl, null, null, DummyReadmeRelativeFileExists);
+
+            Assert.That(result.MissingReadmeAssets, Is.EqualTo(new List<string> { "/relativeImagePath", "/relativeLinkPath" }));
         }
     }
 }

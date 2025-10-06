@@ -6,26 +6,26 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
 {
     internal class ReadmeRewriter : IReadmeRewriter
     {
-        internal const string GithubReadmeMarker = "{githubreadme_marker}";
-        private readonly IRewritableMarkdownElementsProvider rewritableMarkdownElementsProvider;
-        private readonly IReadmeReplacer readmeReplacer;
-        private readonly IReadmeMarkdownElementsProcessor readmeMarkdownElementsProcessor;
-        private readonly IRemoveReplacer removeReplace;
-        private readonly IGitHubUrlHelper gitHubUrlHelper;
+        internal const string ReadmeMarker = "{readme_marker}";
+        private readonly IRewritableMarkdownElementsProvider _rewritableMarkdownElementsProvider;
+        private readonly IReadmeReplacer _readmeReplacer;
+        private readonly IReadmeMarkdownElementsProcessor _readmeMarkdownElementsProcessor;
+        private readonly IRemoveReplacer _removeReplacer;
+        private readonly IRepoUrlHelper _repoUrlHelper;
 
         internal ReadmeRewriter(
             IRewritableMarkdownElementsProvider rewritableMarkdownElementsProvider,
             IReadmeReplacer readmeReplacer,
             IReadmeMarkdownElementsProcessor readmeMarkdownElementsProcessor,
             IRemoveReplacer removeReplace,
-            IGitHubUrlHelper gitHubUrlHelper
+            IRepoUrlHelper repoUrlHelper
             )
         {
-            this.rewritableMarkdownElementsProvider = rewritableMarkdownElementsProvider;
-            this.readmeReplacer = readmeReplacer;
-            this.readmeMarkdownElementsProcessor = readmeMarkdownElementsProcessor;
-            this.removeReplace = removeReplace;
-            this.gitHubUrlHelper = gitHubUrlHelper;
+            _rewritableMarkdownElementsProvider = rewritableMarkdownElementsProvider;
+            _readmeReplacer = readmeReplacer;
+            _readmeMarkdownElementsProcessor = readmeMarkdownElementsProcessor;
+            _removeReplacer = removeReplace;
+            _repoUrlHelper = repoUrlHelper;
         }
 
         public ReadmeRewriter() : this(
@@ -33,51 +33,53 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
             new ReadmeReplacer(),
             new ReadmeMarkdownElementsProcessor(
                 new NuGetImageDomainValidator(NuGetTrustedImageDomains.Instance, new NuGetGitHubBadgeValidator()),
-                GitHubUrlHelper.Instance,
+                RepoUrlHelper.Instance,
                 new HtmlFragmentParser()
                 ),
             new RemoveReplacer(new RemoveReplaceRegexesFactory()),
-            GitHubUrlHelper.Instance
+            RepoUrlHelper.Instance
             )
         {
         }
 
-        // the githubRef is the branch, tag or commit sha, if null the master branch is used
+        // the ref is the branch, tag or commit sha, if null the master branch is used
         public ReadmeRewriterResult Rewrite(
             RewriteTagsOptions rewriteTagsOptions,
             string readme,
             string readmeRelativePath,
-            string githubRepoUrl,
-            string? githubRef = null,
-            RemoveReplaceSettings? removeReplaceSettings = null)
+            string repoUrl,
+            string? @ref,
+            RemoveReplaceSettings? removeReplaceSettings,
+            IReadmeRelativeFileExists readmeRelativeFileExists
+            )
         {
-            OwnerRepoRefReadmePath? ownerRepoRefReadmePath = OwnerRepoRefReadmePath.Create(githubRepoUrl, githubRef, readmeRelativePath);
+            RepoPaths? repoPaths = RepoPaths.Create(repoUrl, @ref, readmeRelativePath);
             
             if (removeReplaceSettings != null)
             {
-                ApplyGithubReplacementText(removeReplaceSettings.RemovalsOrReplacements, ownerRepoRefReadmePath, readmeRelativePath);
-                readme = removeReplace.RemoveReplace(readme, removeReplaceSettings);
+                ApplyRepoReadmeReplacementText(removeReplaceSettings.RemovalsOrReplacements, repoPaths, readmeRelativePath);
+                readme = _removeReplacer.RemoveReplace(readme, removeReplaceSettings);
             }
 
-            return Rewrite(readme, ownerRepoRefReadmePath, rewriteTagsOptions);
+            return Rewrite(readme, repoPaths, rewriteTagsOptions, readmeRelativeFileExists);
         }
 
-        private void ApplyGithubReplacementText(List<RemovalOrReplacement> removalsOrReplacements, OwnerRepoRefReadmePath? ownerRepoRefReadmePath, string readmeRelativePath)
+        private void ApplyRepoReadmeReplacementText(List<RemovalOrReplacement> removalsOrReplacements, RepoPaths? repoPaths, string readmeRelativePath)
         {
-            if (ownerRepoRefReadmePath != null)
+            if (repoPaths != null)
             {
-                removalsOrReplacements.Where(removalOrReplacement => removalOrReplacement.ReplacementText != null && removalOrReplacement.ReplacementText.Contains(GithubReadmeMarker)).ToList().ForEach(replacement =>
+                removalsOrReplacements.Where(removalOrReplacement => removalOrReplacement.ReplacementText != null && removalOrReplacement.ReplacementText.Contains(ReadmeMarker)).ToList().ForEach(replacement =>
                 {
-                    var url = gitHubUrlHelper.GetAbsoluteOrGitHubAbsoluteUrl(readmeRelativePath, ownerRepoRefReadmePath, false);
-                    replacement.ReplacementText = replacement.ReplacementText!.Replace(GithubReadmeMarker, url);
+                    var url = _repoUrlHelper.GetAbsoluteOrRepoAbsoluteUrl(readmeRelativePath, repoPaths, false);
+                    replacement.ReplacementText = replacement.ReplacementText!.Replace(ReadmeMarker, url);
                 });
             }
         }
 
-        private ReadmeRewriterResult Rewrite(string readme, OwnerRepoRefReadmePath? ownerRepoRefReadmePath, RewriteTagsOptions rewriteTagsOptions)
+        private ReadmeRewriterResult Rewrite(string readme, RepoPaths? repoPaths, RewriteTagsOptions rewriteTagsOptions, IReadmeRelativeFileExists readmeRelativeFileExists)
         {
-            var unsupportedRepo = ownerRepoRefReadmePath == null;
-            var relevantMarkdownElements = rewritableMarkdownElementsProvider.GetRelevantMarkdownElementsWithSourceLocation(readme, rewriteTagsOptions == RewriteTagsOptions.None);
+            var unsupportedRepo = repoPaths == null;
+            var relevantMarkdownElements = _rewritableMarkdownElementsProvider.GetRelevantMarkdownElementsWithSourceLocation(readme, rewriteTagsOptions == RewriteTagsOptions.None);
             var hasUnsupportedHTML = false;
             if(rewriteTagsOptions.HasFlag(RewriteTagsOptions.Error))
             {
@@ -85,14 +87,14 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
                 relevantMarkdownElements.RemoveHTML();
             }
 
-            var markdownElementsProcessResult = readmeMarkdownElementsProcessor.Process(relevantMarkdownElements, ownerRepoRefReadmePath, rewriteTagsOptions);
+            var markdownElementsProcessResult = _readmeMarkdownElementsProcessor.Process(relevantMarkdownElements, repoPaths, rewriteTagsOptions, readmeRelativeFileExists);
             string? rewrittenReadme = null;
-            if (!hasUnsupportedHTML && !markdownElementsProcessResult.UnsupportedImageDomains.Any() && !unsupportedRepo)
+            if (!hasUnsupportedHTML && !markdownElementsProcessResult.HasErrors() && !unsupportedRepo)
             {
-                rewrittenReadme = readmeReplacer.Replace(readme, markdownElementsProcessResult.SourceReplacements);
+                rewrittenReadme = _readmeReplacer.Replace(readme, markdownElementsProcessResult.SourceReplacements);
             }
             
-            return new ReadmeRewriterResult(rewrittenReadme, markdownElementsProcessResult.UnsupportedImageDomains, hasUnsupportedHTML, unsupportedRepo);
+            return new ReadmeRewriterResult(rewrittenReadme, markdownElementsProcessResult.UnsupportedImageDomains,markdownElementsProcessResult.MissingReadmeAssets, hasUnsupportedHTML, unsupportedRepo);
         }
     }
 }

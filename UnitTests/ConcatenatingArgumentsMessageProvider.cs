@@ -25,5 +25,7 @@ namespace UnitTests
         public string ReadmeHasUnsupportedHTML() => nameof(ReadmeHasUnsupportedHTML);
 
         public string SameStartEndMetadata(string itemSpec) => itemSpec;
+
+        public string MissingReadmeAsset(string missingReadmeAsset) => missingReadmeAsset;
     }
 }

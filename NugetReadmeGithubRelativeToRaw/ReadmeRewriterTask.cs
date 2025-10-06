@@ -31,6 +31,8 @@ namespace NugetReadmeGithubRelativeToRaw
 
         internal IIOHelper IOHelper { get; set; } = InputOutputHelper.Instance;
 
+        internal IReadmeRelativeFileExistsFactory ReadmeRelativeFileExistsFactory { get; set; } = new ReadmeRelativeFileExistsFactory();
+
         internal IMessageProvider MessageProvider { get; set; } = NugetReadmeGithubRelativeToRaw.MessageProvider.Instance;
 
         internal IReadmeRewriter ReadmeRewriter { get; set; } = new ReadmeRewriter();
@@ -78,20 +80,26 @@ namespace NugetReadmeGithubRelativeToRaw
 
         private void Rewrite(string readmeContents, string readmeRelativePath, RemoveReplaceSettings? removeReplaceSettings)
         {
+            var readmeRelativeFileExists = ReadmeRelativeFileExistsFactory.Create(ProjectDirectoryPath, readmeRelativePath, IOHelper);
             var readmeRewriterResult = ReadmeRewriter.Rewrite(
                 GetRewriteTagsOptions(),
                 readmeContents,
                 readmeRelativePath,
                 RepositoryUrl,
                 RepositoryBranch,
-                removeReplaceSettings);
+                removeReplaceSettings,
+                readmeRelativeFileExists
+                );
 
-            if (readmeRewriterResult.UnsupportedImageDomains.Count > 0)
+
+            foreach (var unsupportedImageDomain in readmeRewriterResult.UnsupportedImageDomains)
             {
-                foreach (var unsupportedImageDomain in readmeRewriterResult.UnsupportedImageDomains)
-                {
-                    Log.LogError(MessageProvider.UnsupportedImageDomain(unsupportedImageDomain));
-                }
+                Log.LogError(MessageProvider.UnsupportedImageDomain(unsupportedImageDomain));
+            }
+
+            foreach (var missingReadmeAsset in readmeRewriterResult.MissingReadmeAssets)
+            {
+                Log.LogError(MessageProvider.MissingReadmeAsset(missingReadmeAsset));
             }
 
             if (readmeRewriterResult.HasUnsupportedHTML)
