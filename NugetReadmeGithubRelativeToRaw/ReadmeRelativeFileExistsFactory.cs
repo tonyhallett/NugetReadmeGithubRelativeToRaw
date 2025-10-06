@@ -1,8 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
-
-namespace NugetReadmeGithubRelativeToRaw
+﻿namespace NugetReadmeGithubRelativeToRaw
 {
-    [ExcludeFromCodeCoverage]
     internal class ReadmeRelativeFileExistsFactory : IReadmeRelativeFileExistsFactory
     {
         public IReadmeRelativeFileExists Create(string projectDirectoryPath,string readmeRelativePath, IIOHelper ioHelper)

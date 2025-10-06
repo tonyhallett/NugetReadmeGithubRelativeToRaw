@@ -9,6 +9,7 @@ namespace NugetReadmeGithubRelativeToRaw
 
         public ReadmeRelativeFileExists(string projectDirectoryPath, string readmeRelativePath, IIOHelper ioHelper)
         {
+            readmeRelativePath = NormalizeDirectorySeparators(readmeRelativePath);
             _projectDirectoryPath = projectDirectoryPath;
             _readmeRelativePath = readmeRelativePath;
             _ioHelper = ioHelper;
@@ -19,21 +20,26 @@ namespace NugetReadmeGithubRelativeToRaw
             return _ioHelper.FileExists(GetPath(relativePath));
         }
 
+        private string NormalizeDirectorySeparators(string path)
+        {
+            return path
+                .Replace('/', Path.DirectorySeparatorChar)
+                .Replace('\\', Path.DirectorySeparatorChar);
+        }
+
         private string GetPath(string relativePath)
         {
+            relativePath = NormalizeDirectorySeparators(relativePath);
+
             // repo relative
-            if (relativePath.StartsWith("/"))
+            if (relativePath.StartsWith(Path.DirectorySeparatorChar.ToString()))
             {
-                return Path.Combine(_projectDirectoryPath, relativePath);
+                return Path.Combine(_projectDirectoryPath, relativePath.TrimStart(Path.DirectorySeparatorChar));
             }
 
-            var readmeRelativePath = relativePath;
-            if (!readmeRelativePath.StartsWith("/"))
-            {
-                readmeRelativePath = "/" + readmeRelativePath;
-            }
-
-            return Path.Combine(_projectDirectoryPath, readmeRelativePath);
+            string readmeFullPath = Path.Combine(_projectDirectoryPath, _readmeRelativePath);
+            string readmeDirectory = Path.GetDirectoryName(readmeFullPath)!;
+            return Path.Combine(readmeDirectory, relativePath);
         }
     }
 }
