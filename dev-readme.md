@@ -156,7 +156,59 @@ The RepositoryCommit does not require PublishRepositoryUrl.
 ```
 
 and the sdk imports the targets providing the functionality above.
+[](https://github.com/dotnet/sdk/blob/b9f441a35351d260b51e7c682cebcf318270dac7/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Sdk.targets#L1373)
+```xml
+ <Import Project="$(MSBuildThisFileDirectory)Microsoft.NET.Sdk.SourceLink.targets" Condition="'$(SuppressImplicitGitSourceLink)' != 'true'" />
+```
+
 [Microsoft.NET.Sdk.SourceLink.targets](https://github.com/dotnet/sdk/blob/b9f441a35351d260b51e7c682cebcf318270dac7/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Sdk.SourceLink.targets#L27)
+```xml
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- C++ projects currently do not import Microsoft.NET.Sdk.props. -->
+  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NET.Sdk.SourceLink.props" Condition="'$(_SourceLinkPropsImported)' != 'true'"/>
+
+  <PropertyGroup>
+    <!-- Workaround for https://github.com/Microsoft/msbuild/issues/3294. -->
+    <_SourceLinkSdkSubDir>build</_SourceLinkSdkSubDir>
+    <_SourceLinkSdkSubDir Condition="'$(IsCrossTargetingBuild)' == 'true'">buildMultiTargeting</_SourceLinkSdkSubDir>
+
+    <!-- Workaround for https://github.com/dotnet/sdk/issues/36585 (Desktop XAML targets do not produce correct #line directives) -->
+    <EmbedUntrackedSources Condition="'$(EmbedUntrackedSources)' == '' and '$(ImportFrameworkWinFXTargets)' != 'true'">true</EmbedUntrackedSources>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)..\..\Microsoft.Build.Tasks.Git\build\Microsoft.Build.Tasks.Git.targets"/>
+  <Import Project="$(MSBuildThisFileDirectory)..\..\Microsoft.SourceLink.Common\$(_SourceLinkSdkSubDir)\Microsoft.SourceLink.Common.targets"/>
+  <Import Project="$(MSBuildThisFileDirectory)..\..\Microsoft.SourceLink.GitHub\build\Microsoft.SourceLink.GitHub.targets"/>
+  <Import Project="$(MSBuildThisFileDirectory)..\..\Microsoft.SourceLink.GitLab\build\Microsoft.SourceLink.GitLab.targets"/>
+  <Import Project="$(MSBuildThisFileDirectory)..\..\Microsoft.SourceLink.AzureRepos.Git\build\Microsoft.SourceLink.AzureRepos.Git.targets"/>
+  <Import Project="$(MSBuildThisFileDirectory)..\..\Microsoft.SourceLink.Bitbucket.Git\build\Microsoft.SourceLink.Bitbucket.Git.targets"/>
+
+</Project>
+
+```
+[Microsoft.NET.Sdk.SourceLink.props](https://github.com/dotnet/sdk/blob/b9f441a35351d260b51e7c682cebcf318270dac7/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Sdk.SourceLink.props)
+Imports the Microsoft.SourceLink.Common.props that sets the conditional props
+```xml
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <!-- Suppress implicit SourceLink inclusion if any Microsoft.SourceLink package is referenced. -->
+    <SuppressImplicitGitSourceLink Condition="'$(PkgMicrosoft_SourceLink_Common)' != ''">true</SuppressImplicitGitSourceLink>
+    <_SourceLinkPropsImported>true</_SourceLinkPropsImported>
+  </PropertyGroup>
+
+  <ImportGroup Condition="'$(SuppressImplicitGitSourceLink)' != 'true'">
+    <Import Project="$(MSBuildThisFileDirectory)..\..\Microsoft.Build.Tasks.Git\build\Microsoft.Build.Tasks.Git.props"/>
+    <Import Project="$(MSBuildThisFileDirectory)..\..\Microsoft.SourceLink.Common\build\Microsoft.SourceLink.Common.props"/>
+    <Import Project="$(MSBuildThisFileDirectory)..\..\Microsoft.SourceLink.GitHub\build\Microsoft.SourceLink.GitHub.props"/>
+    <Import Project="$(MSBuildThisFileDirectory)..\..\Microsoft.SourceLink.GitLab\build\Microsoft.SourceLink.GitLab.props"/>
+    <Import Project="$(MSBuildThisFileDirectory)..\..\Microsoft.SourceLink.AzureRepos.Git\build\Microsoft.SourceLink.AzureRepos.Git.props"/>
+    <Import Project="$(MSBuildThisFileDirectory)..\..\Microsoft.SourceLink.Bitbucket.Git\build\Microsoft.SourceLink.Bitbucket.Git.props"/>
+  </ImportGroup>
+
+</Project>
+```
 
 
 # How the target runs in the correct place, so as to generate PackageReadmeFile in time.
@@ -213,7 +265,7 @@ That target sets RepositoryUrl, RepositoryBranch and RepositoryCommit if not alr
 
 -----
 The [packing the readme advice](https://learn.microsoft.com/en-us/nuget/reference/errors-and-warnings/nu5039)
-When creating a package from an MSBuild project file, make sure to reference the readme file in the project, as follows:
+> When creating a package from an MSBuild project file, make sure to reference the readme file in the project, as follows:
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
