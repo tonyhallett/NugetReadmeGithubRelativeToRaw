@@ -7,13 +7,11 @@ namespace UnitTests
     {
         [TestCase("dir/fileName.ext","username","reponame","main")]
         [TestCase("dir2/fileName2.ext", "username2", "reponame2", "master")]
-        [TestCase("dir/fileName.ext", "username", "reponame", null)] // should default to master
-        public void Should_Rewrite_Relative_Markdown_Image(string relativePath, string username, string reponame,string? repoRef)
+        public void Should_Rewrite_Relative_Markdown_Image(string relativePath, string username, string reponame,string repoRef)
         {
             var readmeContent = CreateMarkdownImage(relativePath);
             var repoUrl = CreateGitHubRepositoryUrl(username, reponame);
-            var expectedRepoRef = repoRef ?? "master";
-            var expectedRedmeRewritten = CreateMarkdownImage($"https://raw.githubusercontent.com/{username}/{reponame}/{expectedRepoRef}/{relativePath}");
+            var expectedRedmeRewritten = CreateMarkdownImage($"https://raw.githubusercontent.com/{username}/{reponame}/{repoRef}/{relativePath}");
             var readmeRewritten = ReadmeRewriter.Rewrite(RewriteTagsOptions.None, readmeContent, "/readme.md", repoUrl, repoRef, null, DummyReadmeRelativeFileExists)!.RewrittenReadme;
             Assert.That(readmeRewritten, Is.EqualTo(expectedRedmeRewritten));
         }
@@ -132,7 +130,7 @@ For full details visit [GitHub](https://github.com/username/reponame/blob/main/r
         {
             var readmeContent = CreateMarkdownImage("/relativePath");
             var repoUrl = CreateGitHubRepositoryUrl("user", "repo");
-            _= ReadmeRewriter.Rewrite(RewriteTagsOptions.None, readmeContent, "/readme.md", repoUrl, null, null, DummyReadmeRelativeFileExists);
+            _= ReadmeRewriter.Rewrite(RewriteTagsOptions.None, readmeContent, "/readme.md", repoUrl, "main", null, DummyReadmeRelativeFileExists);
 
             Assert.That(DummyReadmeRelativeFileExists.RelativePath, Is.EqualTo("/relativePath"));
         }
@@ -148,7 +146,7 @@ For full details visit [GitHub](https://github.com/username/reponame/blob/main/r
 {relativeLink}
 ";
             var repoUrl = CreateGitHubRepositoryUrl("user", "repo");
-            var result = ReadmeRewriter.Rewrite(RewriteTagsOptions.None, readmeContent, "/readme.md", repoUrl, null, null, DummyReadmeRelativeFileExists);
+            var result = ReadmeRewriter.Rewrite(RewriteTagsOptions.None, readmeContent, "/readme.md", repoUrl, "main", null, DummyReadmeRelativeFileExists);
 
             Assert.That(result.MissingReadmeAssets, Is.EqualTo(new List<string> { "/relativeImagePath", "/relativeLinkPath" }));
         }
@@ -156,7 +154,7 @@ For full details visit [GitHub](https://github.com/username/reponame/blob/main/r
         [Test]
         public void Should_Have_UnsupportedRepo_When_Null_Argument()
         {
-            var result = ReadmeRewriter.Rewrite(RewriteTagsOptions.None, "", "/readme.md", null, null, null, DummyReadmeRelativeFileExists);
+            var result = ReadmeRewriter.Rewrite(RewriteTagsOptions.None, "", "/readme.md", null, "null", null, DummyReadmeRelativeFileExists);
 
             Assert.That(result.UnsupportedRepo, Is.True);
         }

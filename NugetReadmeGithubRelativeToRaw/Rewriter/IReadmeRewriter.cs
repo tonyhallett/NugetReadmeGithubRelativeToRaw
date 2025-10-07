@@ -7,7 +7,7 @@
             string readme, 
             string readmeRelativePath, 
             string? repoUrl, 
-            string? @ref, 
+            string @ref, 
             RemoveReplaceSettings? removeReplaceSettings,
             IReadmeRelativeFileExists readmeRelativeFileExists);
     }

@@ -18,9 +18,8 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
             ReadmeRelativePath = readmeRelativePath;
         }
 
-        public static RepoPaths? Create(string repoUrl, string? @ref, string readmeRelativePath)
+        public static RepoPaths? Create(string repoUrl, string @ref, string readmeRelativePath)
         {
-            @ref = @ref ?? "master";
             repoUrl = GetRepoUrl(repoUrl);
 
             if (repoUrl.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase))

@@ -24,7 +24,9 @@ An [MsBuild custom target](https://learn.microsoft.com/en-us/nuget/concepts/msbu
 | PackageReadmeFile        |           | Yes.                         | The output readme relative path. NuGet property                |
 | RepositoryUrl            |           | Not if ReadmeRepositoryUrl   | A GitHub or GitLab RepositoryUrl                               |
 | ReadmeRepositoryUrl      |           | Not if RepositoryUrl         | A GitHub or GitLab RepositoryUrl NuGet property                |
-| RepositoryBranch         | master    | No.                          | The branch to use for the raw URL.                             |
+| RepositoryRef            | master    | No.                          | The ref to use for the raw URL.                                |
+| RepositoryCommit         | master    | No.                          | The ref to use for the raw URL.                                |
+| RepositoryBranch         | master    | No.                          | The ref to use for the raw URL.                                |
 | RemoveCommentIdentifiers |           | No.                          | The format is - *startidentifier*;*endidentifier*              |
 
 # Removal / replacement

@@ -9,7 +9,6 @@ namespace UnitTests
     internal class ReadmeRewriterTask_Tests
     {
         private const string repositoryUrl = "repositoryurl";
-        private const string repositoryBranch = "repositorybranch";
         private const string projectDirectoryPath = "projectdir";
         private const string removeCommentIdentifiers = "removeCommentIdentifiers";
         private readonly ITaskItem[] removeReplaceTaskItems = [new Mock<ITaskItem>().Object];
@@ -74,7 +73,6 @@ namespace UnitTests
                 RemoveReplaceSettingsProvider = _mockRemoveReplaceSettingsProvider.Object,
                 MessageProvider = new ConcatenatingArgumentsMessageProvider(),
                 RepositoryUrl = repositoryUrl,
-                RepositoryBranch = repositoryBranch,
                 ProjectDirectoryPath = projectDirectoryPath,
             };
             removeReplaceSettingsResult = new TestRemoveReplaceSettingsResult();
@@ -123,7 +121,7 @@ namespace UnitTests
                 DummyIOHelper.ReadmeText,
                 expectedReadmeRelativePath,
                 repositoryUrl,
-                repositoryBranch,
+                It.IsAny<string>(),
                 removeReplaceSettingsResult.Settings,
                 It.Is<ReadmeRelativeFileExists>(readmeRelativeFileExists => readmeRelativeFileExists.ReadmeRelativePath == expectedReadmeRelativePath && readmeRelativeFileExists.ProjectDirectoryPath == projectDirectoryPath))
             );
@@ -168,7 +166,8 @@ namespace UnitTests
             RewriteTagsOptions rewriteTagsOptions = RewriteTagsOptions.Error, 
             string? readmeRelativePath = null,
             string? expectedReadmeRelativePath = null,
-            string? expectedRepositoryUrl = null)
+            string? expectedRepositoryUrl = null
+            )
         {
             _readmeRewriterTask.ReadmeRelativePath = readmeRelativePath;
             _mockReadmeRewriter.Setup(readmeRewriter => readmeRewriter.Rewrite(
@@ -176,7 +175,7 @@ namespace UnitTests
                 DummyIOHelper.ReadmeText,
                 expectedReadmeRelativePath ?? "readme.md",
                 expectedRepositoryUrl ?? repositoryUrl,
-                repositoryBranch,
+                It.IsAny<string>(),
                 removeReplaceSettingsResult.Settings, 
                 It.IsAny<IReadmeRelativeFileExists>())
             ).Returns(readmeRewriterResult);
@@ -206,7 +205,7 @@ namespace UnitTests
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 repositoryUrl,
-                repositoryBranch,
+                It.IsAny<string>(),
                 It.IsAny<RemoveReplaceSettings>(), 
                 It.IsAny<IReadmeRelativeFileExists>())).Returns(readmeRewriterResult);
 
@@ -249,7 +248,7 @@ namespace UnitTests
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 repositoryUrl,
-                repositoryBranch,
+                It.IsAny<string>(),
                 It.IsAny<RemoveReplaceSettings>(), 
                 It.IsAny<IReadmeRelativeFileExists>())).Returns(readmeRewriterResult);
 
@@ -274,7 +273,7 @@ namespace UnitTests
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 repositoryUrl,
-                repositoryBranch,
+                It.IsAny<string>(),
                 removeReplaceSettingsResult.Settings,
                 It.IsAny<IReadmeRelativeFileExists>())).Returns(readmeRewriterResult);
 
@@ -335,6 +334,42 @@ namespace UnitTests
                 null,
                 _readmeRewriterTask.ReadmeRepositoryUrl);
             _ = ExecuteReadmeExists();
+        }
+
+        [Test]
+        public void Should_Prefer_RepositoryRef_For_Ref() 
+            => RefTest("repositoryRef", "repositoryCommit", "repositoryBranch", "repositoryRef");
+
+        [Test]
+        public void Should_Prefer_RepositoryCommit_For_Ref_If_RepositoryRef_Null()
+            => RefTest(null, "repositoryCommit", "repositoryBranch", "repositoryCommit");
+
+        [Test]
+        public void Should_Prefer_RepositoryBranch_For_Ref_If_RepositoryRef_And_RepositoryCommit_Null() 
+            => RefTest(null, null, "repositoryBranch", "repositoryBranch");
+
+        [Test]
+        public void Should_Default_Ref_To_Master_If_RepositoryRef_RepositoryCommit_And_RepositoryBranch_Null() 
+            => RefTest(null, null, null, "master");
+
+        private void RefTest(string? repositoryRef, string? repositoryCommit, string? repositoryBranch, string expectedRef)
+        {
+            _readmeRewriterTask.RepositoryRef = repositoryRef;
+            _readmeRewriterTask.RepositoryCommit = repositoryCommit;
+            _readmeRewriterTask.RepositoryBranch = repositoryBranch;
+
+            _mockReadmeRewriter.Setup(readmeRewriter => readmeRewriter.Rewrite(
+                It.IsAny<RewriteTagsOptions>(),
+                DummyIOHelper.ReadmeText,
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                expectedRef,
+               It.IsAny<RemoveReplaceSettings?>(),
+                It.IsAny<IReadmeRelativeFileExists>())
+            ).Returns(new ReadmeRewriterResult(null, [], [], false, false));
+
+            _ = ExecuteReadmeExists();
+
         }
     }
 }

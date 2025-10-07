@@ -13,33 +13,36 @@
     <!-- or instead _GetPackageFiles -->
     <Target Name="ReadmeRewrite_ForPack"
           BeforeTargets="$(BeforePack)"
+          DependsOnTargets="_InitializeNuspecRepositoryInformationProperties"
           Condition="'$(IsPackable)' != 'false'">
 
-    <!-- Require the caller to set PackageReadmeFile (relative to project directory) -->
-    <Error Condition="'$(PackageReadmeFile)' == ''"
-           Text="ReadmeRewrite: you must set &lt;PackageReadmeFile&gt; in the project (path RELATIVE to the project directory, e.g. README.nuget.md)." />
+        <!-- Require the caller to set PackageReadmeFile (relative to project directory) -->
+        <Error Condition="'$(PackageReadmeFile)' == ''"
+               Text="ReadmeRewrite: you must set &lt;PackageReadmeFile&gt; in the project (path RELATIVE to the project directory, e.g. README.nuget.md)." />
 
-    <Error Condition="'$(RepositoryUrl)' == ''"
-           Text="ReadmeRewrite: you must set &lt;RepositoryUrl&gt; in the project." />
+        <PropertyGroup>
+          <_OutputReadmeAbsolute>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(PackageReadmeFile)'))</_OutputReadmeAbsolute>
+        </PropertyGroup>
 
-    <PropertyGroup>
-      <_OutputReadmeAbsolute>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(PackageReadmeFile)'))</_OutputReadmeAbsolute>
-    </PropertyGroup>
+        <!-- Run the rewrite task -->
+        <ReadmeRewriterTask
+            ProjectDirectoryPath="$(MSBuildProjectDirectory)"
+            ReadmeRelativePath="$(BaseReadme)"
+            OutputReadme="$(_OutputReadmeAbsolute)"
 
-    <!-- Run the rewrite task -->
-    <ReadmeRewriterTask
-        ProjectDirectoryPath="$(MSBuildProjectDirectory)"
-        ReadmeRelativePath="$(BaseReadme)"
-        OutputReadme="$(_OutputReadmeAbsolute)"
-        RepositoryUrl="$(RepositoryUrl)"
-        ReadmeRepositoryUrl="$(ReadmeRepositoryUrl)"
-        RepositoryBranch="$(_RepoBranch)"
-        RemoveCommentIdentifiers="$(RemoveCommentIdentifiers)"
-        RemoveReplaceItems="@(ReadmeRemoveReplace)"
-        />
+            RepositoryUrl="$(RepositoryUrl)"
+            ReadmeRepositoryUrl="$(ReadmeRepositoryUrl)"
+            
+            RepositoryBranch="$(RepositoryBranch)"
+            RepositoryCommit="$(RepositoryCommit)"
+            RepositoryRef="$(RepositoryRef)"
+            
+            RemoveCommentIdentifiers="$(RemoveCommentIdentifiers)"
+            RemoveReplaceItems="@(ReadmeRemoveReplace)"
+            />
 
-    <ItemGroup>
-        <None Include="$(PackageReadmeFile)" Pack="true" PackagePath=""/>
-    </ItemGroup>
+        <ItemGroup>
+            <None Include="$(PackageReadmeFile)" Pack="true" PackagePath=""/>
+        </ItemGroup>
   </Target>
 </Project>

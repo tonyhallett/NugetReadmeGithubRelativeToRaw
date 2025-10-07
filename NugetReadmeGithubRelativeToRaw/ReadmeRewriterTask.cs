@@ -26,8 +26,16 @@ namespace NugetReadmeGithubRelativeToRaw
         public string? ReadmeRepositoryUrl { get; set; }
 
         public string? ReadmeRelativePath { get; set; }
-        
+
+        #region for ref - in this order
+
+        public string? RepositoryRef { get; set; }
+
+        public string? RepositoryCommit { get; set; }
+
         public string? RepositoryBranch { get; set; }
+        #endregion
+
 
         public string? RewriteTagsOptions { get; set; }
 
@@ -99,6 +107,8 @@ namespace NugetReadmeGithubRelativeToRaw
             return ReadmeRepositoryUrl ?? RepositoryUrl;
         }
 
+        private string GetRef() => RepositoryRef ?? RepositoryCommit ?? RepositoryBranch ?? "master";
+
         private void Rewrite(string readmeContents, string readmeRelativePath, RemoveReplaceSettings? removeReplaceSettings)
         {
             var repositoryUrl = GetRepositoryUrl();
@@ -108,7 +118,7 @@ namespace NugetReadmeGithubRelativeToRaw
                 readmeContents,
                 readmeRelativePath,
                 repositoryUrl,
-                RepositoryBranch,
+                GetRef(),
                 removeReplaceSettings,
                 readmeRelativeFileExists
                 );

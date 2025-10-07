@@ -42,13 +42,13 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
         {
         }
 
-        // the ref is the branch, tag or commit sha, if null the master branch is used
+        // the ref is the branch, tag or commit sha
         public ReadmeRewriterResult Rewrite(
             RewriteTagsOptions rewriteTagsOptions,
             string readme,
             string readmeRelativePath,
             string? repoUrl,
-            string? @ref,
+            string @ref,
             RemoveReplaceSettings? removeReplaceSettings,
             IReadmeRelativeFileExists readmeRelativeFileExists
             )
