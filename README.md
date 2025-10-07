@@ -103,13 +103,20 @@ Inline replacement text ( note the Include attribute is required even if not usi
 ```
 
 
-# Failing build
+# Failing the build
 
 The relative BaseReadme does not exist.
+
 The BaseReadme contains html.
+
 The BaseReadme has absolute image urls that are not from [Allowed domains](https://learn.microsoft.com/en-us/nuget/nuget-org/package-readme-on-nuget-org#allowed-domains-for-images-and-badges)
+
 The BaseReadme has relative links that do not exist in the project.
+
 The RepositoryUrl or ReadmeRepositoryUrl property is not a valid GitHub or GitLab url.
+
 The RemoveCommentIdentifiers property is in an invalid format.
+
 ReadmeRemoveReplace required metadata is missing.
+
 ReadmeRemoveReplace Start and End are the same.
