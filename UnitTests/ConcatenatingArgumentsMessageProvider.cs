@@ -7,7 +7,7 @@ namespace UnitTests
     {
         public string UnsupportedImageDomain(string imageDomain) => imageDomain;
 
-        public string CouldNotParseRepositoryUrl(string propertyValue) => propertyValue;
+        public string CouldNotParseRepositoryUrl(string? propertyValue) => propertyValue ?? "null";
 
         public string CouldNotParseRewriteTagsOptionsUsingDefault(string propertyValue, RewriteTagsOptions defaultRewriteTagsOptions)
             => $"{propertyValue}{defaultRewriteTagsOptions}";

@@ -32,9 +32,10 @@
         ReadmeRelativePath="$(BaseReadme)"
         OutputReadme="$(_OutputReadmeAbsolute)"
         RepositoryUrl="$(RepositoryUrl)"
+        ReadmeRepositoryUrl="$(ReadmeRepositoryUrl)"
         RepositoryBranch="$(_RepoBranch)"
         RemoveCommentIdentifiers="$(RemoveCommentIdentifiers)"
-        RemoveReplaceItems="@(RemoveReplaceItem)"
+        RemoveReplaceItems="@(ReadmeRemoveReplace)"
         />
 
     <ItemGroup>

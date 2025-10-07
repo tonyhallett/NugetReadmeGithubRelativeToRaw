@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Reflection;
+using System.Text;
 using NugetBuildTargetsIntegrationTesting;
 using NugetReadmeGithubRelativeToRaw;
 using NugetReadmeGithubRelativeToRaw.Rewriter;
@@ -41,13 +42,14 @@ After
         {
             var replace = "# Replace";
             var replacement = "Nuget only";
-
-            var removeReplaceItems = @$"
-        <RemoveReplaceItem Include=""1"">
-            {CreateMetadataElement(nameof(RemoveReplaceMetadata.Start), replace)}
-            {CreateMetadataElement(nameof(RemoveReplaceMetadata.CommentOrRegex), nameof(CommentOrRegex.Regex))}
-            {CreateMetadataElement(nameof(RemoveReplaceMetadata.ReplacementText), replacement)}
-        </RemoveReplaceItem>";
+            
+            var removeReplaceItems = CreateReadmeRemoveReplaceItem(
+                "1",
+                [
+                    CreateMetadataElement(nameof(RemoveReplaceMetadata.Start), replace),
+                    CreateMetadataElement(nameof(RemoveReplaceMetadata.CommentOrRegex), nameof(CommentOrRegex.Regex)),
+                    CreateMetadataElement(nameof(RemoveReplaceMetadata.ReplacementText), replacement)
+                ]);
 
             var relativeReadme = @$"
 Before
@@ -63,19 +65,30 @@ Before
 
         }
 
+        private static string CreateReadmeRemoveReplaceItem(string include, IEnumerable<string> metadata)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine(@$"<{MsBuildPropertyItemNames.ReadmeRemoveReplace} Include=""{include}"">");
+            foreach (var meta in metadata)
+            {
+                sb.AppendLine(meta);
+            }
+            sb.AppendLine($@"</{MsBuildPropertyItemNames.ReadmeRemoveReplace}>");
+            return sb.ToString();
+        }
+
         [Test]
         public void Should_Have_Correct_Replaced_To_End_From_File_Readme_In_Generated_NuPkg()
         {
             var replace = "# Replace";
             var replacement = "Nuget only file replace";
 
-            var removeReplaceItems = @$"
-        <RemoveReplaceItem Include=""replace.txt"">
-            {CreateMetadataElement(nameof(RemoveReplaceMetadata.Start), replace)}
-            {CreateMetadataElement(nameof(RemoveReplaceMetadata.CommentOrRegex), nameof(CommentOrRegex.Regex))}
-            {CreateMetadataElement(nameof(RemoveReplaceMetadata.ReplacementText), replacement)}
-        </RemoveReplaceItem>";
-
+            var removeReplaceItems = CreateReadmeRemoveReplaceItem("replace.txt",
+                [
+                    CreateMetadataElement(nameof(RemoveReplaceMetadata.Start), replace),
+                    CreateMetadataElement(nameof(RemoveReplaceMetadata.CommentOrRegex), nameof(CommentOrRegex.Regex)),
+                    CreateMetadataElement(nameof(RemoveReplaceMetadata.ReplacementText), replacement)
+                ]);
             var relativeReadme = @$"
 Before
 {replace}

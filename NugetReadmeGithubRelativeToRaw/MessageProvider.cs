@@ -8,8 +8,8 @@ namespace NugetReadmeGithubRelativeToRaw
     {
         public static MessageProvider Instance { get; } = new MessageProvider();
 
-        public string CouldNotParseRepositoryUrl(string propertyValue)
-            => $"Could not parse the {MsBuildPropertyItemNames.RepositoryUrlProperty}: {propertyValue}";
+        public string CouldNotParseRepositoryUrl(string? propertyValue)
+            => $"Could not parse the repository url :{propertyValue}.  Use either {MsBuildPropertyItemNames.RepositoryUrlProperty} or {MsBuildPropertyItemNames.ReadmeRepositoryUrlProperty} to supply a GitHub or GitLab repository url.";
 
         public string CouldNotParseRewriteTagsOptionsUsingDefault(string propertyValue, RewriteTagsOptions defaultRewriteTagsOptions) 
             => $"Could not parse the {MsBuildPropertyItemNames.RewriteTagsOptionsProperty}: {propertyValue}. Using the default: {defaultRewriteTagsOptions}";
@@ -27,15 +27,15 @@ namespace NugetReadmeGithubRelativeToRaw
             => $"MSBuild Property {nameof(ReadmeRewriterTask.RemoveCommentIdentifiers)} must have different start to end";
 
         public string RequiredMetadata(string metadataName, string itemSpec)
-            => $"Metadata, {metadataName}, is required on item {MsBuildPropertyItemNames.RemoveReplaceItem} '{itemSpec}'.";
+            => $"Metadata, {metadataName}, is required on item {MsBuildPropertyItemNames.ReadmeRemoveReplace} '{itemSpec}'.";
 
         public string SameStartEndMetadata(string itemSpec)
         {
-            return $"{nameof(RemoveReplaceMetadata.Start)} and {nameof(RemoveReplaceMetadata.End)} metadata on item {MsBuildPropertyItemNames.RemoveReplaceItem} '{itemSpec}' are the same value";
+            return $"{nameof(RemoveReplaceMetadata.Start)} and {nameof(RemoveReplaceMetadata.End)} metadata on item {MsBuildPropertyItemNames.ReadmeRemoveReplace} '{itemSpec}' are the same value";
         }
 
         public string UnsupportedCommentOrRegex(string itemSpec) 
-            => $"Unsupported {nameof(RemoveReplaceMetadata.CommentOrRegex)} metadata on item {MsBuildPropertyItemNames.RemoveReplaceItem} '{itemSpec}'. Supported values {nameof(CommentOrRegex.Comment)} | {nameof(CommentOrRegex.Regex)}";
+            => $"Unsupported {nameof(RemoveReplaceMetadata.CommentOrRegex)} metadata on item {MsBuildPropertyItemNames.ReadmeRemoveReplace} '{itemSpec}'. Supported values {nameof(CommentOrRegex.Comment)} | {nameof(CommentOrRegex.Regex)}";
 
         public string UnsupportedImageDomain(string imageDomain) => $"Unsupported image domain found in README: {imageDomain}";
     }

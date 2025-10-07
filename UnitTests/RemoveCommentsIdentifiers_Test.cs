@@ -12,7 +12,7 @@ namespace UnitTests
             public const string FormatError = "formaterror";
             public const string SameStartEndError = "samestartenderror";
 
-            public string CouldNotParseRepositoryUrl(string url)
+            public string CouldNotParseRepositoryUrl(string? url)
             {
                 throw new NotImplementedException();
             }

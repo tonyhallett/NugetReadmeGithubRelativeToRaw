@@ -18,7 +18,7 @@ namespace NugetReadmeGithubRelativeToRaw
 
         string ReadmeFileDoesNotExist(string readmeFilePath);
 
-        string CouldNotParseRepositoryUrl(string propertyValue);
+        string CouldNotParseRepositoryUrl(string? propertyValue);
 
         string CouldNotParseRewriteTagsOptionsUsingDefault(string propertyValue, RewriteTagsOptions defaultRewriteTagsOptions);
         

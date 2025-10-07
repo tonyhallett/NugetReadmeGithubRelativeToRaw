@@ -47,13 +47,13 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
             RewriteTagsOptions rewriteTagsOptions,
             string readme,
             string readmeRelativePath,
-            string repoUrl,
+            string? repoUrl,
             string? @ref,
             RemoveReplaceSettings? removeReplaceSettings,
             IReadmeRelativeFileExists readmeRelativeFileExists
             )
         {
-            RepoPaths? repoPaths = RepoPaths.Create(repoUrl, @ref, readmeRelativePath);
+            RepoPaths? repoPaths = repoUrl != null ? RepoPaths.Create(repoUrl, @ref, readmeRelativePath) : null;
             
             if (removeReplaceSettings != null)
             {
@@ -81,7 +81,7 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
             var unsupportedRepo = repoPaths == null;
             var relevantMarkdownElements = _rewritableMarkdownElementsProvider.GetRelevantMarkdownElementsWithSourceLocation(readme, rewriteTagsOptions == RewriteTagsOptions.None);
             var hasUnsupportedHTML = false;
-            if(rewriteTagsOptions.HasFlag(RewriteTagsOptions.Error))
+            if (rewriteTagsOptions.HasFlag(RewriteTagsOptions.Error))
             {
                 hasUnsupportedHTML = relevantMarkdownElements.HtmlInlines.Any() | relevantMarkdownElements.HtmlBlocks.Any();
                 relevantMarkdownElements.RemoveHTML();

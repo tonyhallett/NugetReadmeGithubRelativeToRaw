@@ -16,9 +16,15 @@ namespace NugetReadmeGithubRelativeToRaw
         
         [Required]
         public string OutputReadme { get; set; }
-        [Required]
-        public string RepositoryUrl { get; set; }
+
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
+
+
+        // one of these required
+        public string? RepositoryUrl { get; set; }
+
+        public string? ReadmeRepositoryUrl { get; set; }
+
         public string? ReadmeRelativePath { get; set; }
         
         public string? RepositoryBranch { get; set; }
@@ -88,14 +94,20 @@ namespace NugetReadmeGithubRelativeToRaw
             }
         }
 
+        private string? GetRepositoryUrl()
+        {
+            return ReadmeRepositoryUrl ?? RepositoryUrl;
+        }
+
         private void Rewrite(string readmeContents, string readmeRelativePath, RemoveReplaceSettings? removeReplaceSettings)
         {
+            var repositoryUrl = GetRepositoryUrl();
             var readmeRelativeFileExists = new ReadmeRelativeFileExists(ProjectDirectoryPath, readmeRelativePath);
             var readmeRewriterResult = ReadmeRewriter.Rewrite(
                 GetRewriteTagsOptions(),
                 readmeContents,
                 readmeRelativePath,
-                RepositoryUrl,
+                repositoryUrl,
                 RepositoryBranch,
                 removeReplaceSettings,
                 readmeRelativeFileExists
@@ -119,7 +131,7 @@ namespace NugetReadmeGithubRelativeToRaw
 
             if (readmeRewriterResult.UnsupportedRepo)
             {
-                Log.LogError(MessageProvider.CouldNotParseRepositoryUrl(RepositoryUrl));
+                Log.LogError(MessageProvider.CouldNotParseRepositoryUrl(repositoryUrl));
             }
 
             if (!Log.HasLoggedErrors)

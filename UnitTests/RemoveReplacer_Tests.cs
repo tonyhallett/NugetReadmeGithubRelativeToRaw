@@ -2,7 +2,7 @@ using NugetReadmeGithubRelativeToRaw.Rewriter;
 
 namespace UnitTests
 {
-    internal class ReadmeRewriter_RemoveReplacer_Tests
+    internal class RemoveReplacer_Tests
     {
         private RemoveReplacer _removeReplacer = new(new RemoveReplaceRegexesFactory());
 
@@ -41,6 +41,35 @@ This is also visible
 
             Assert.That(rewrittenReadMe, Is.EqualTo(expectedReadMeContent));
         }
+
+        [Test]
+        public void Should_Remove_Multiple_Commented_Sections()
+        {
+            var readMeContent = @"
+This is visible
+<!-- remove-start 1 -->
+This is removed
+<!-- remove-end 1 -->
+This is also visible
+<!-- remove-start 2 -->
+This is removed
+<!-- remove-end 2 -->
+This too is visible
+";
+            var removeCommentIdentifiers = new RemoveCommentIdentifiers("remove-start", "remove-end");
+            var removeReplaceSettings = new RemoveReplaceSettings(removeCommentIdentifiers, []);
+            var rewrittenReadMe = _removeReplacer.RemoveReplace(readMeContent, removeReplaceSettings)!;
+
+            var expectedReadMeContent = @"
+This is visible
+This is also visible
+This too is visible
+";
+
+            Assert.That(rewrittenReadMe, Is.EqualTo(expectedReadMeContent));
+        }
+
+
 
         [Test]
         public void Should_Remove_With_Regex()

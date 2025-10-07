@@ -1,5 +1,3 @@
-using Moq;
-using NugetReadmeGithubRelativeToRaw;
 using NugetReadmeGithubRelativeToRaw.Rewriter;
 using NugetReadmeGithubRelativeToRaw.Rewriter.Validation;
 
@@ -153,6 +151,14 @@ For full details visit [GitHub](https://github.com/username/reponame/blob/main/r
             var result = ReadmeRewriter.Rewrite(RewriteTagsOptions.None, readmeContent, "/readme.md", repoUrl, null, null, DummyReadmeRelativeFileExists);
 
             Assert.That(result.MissingReadmeAssets, Is.EqualTo(new List<string> { "/relativeImagePath", "/relativeLinkPath" }));
+        }
+
+        [Test]
+        public void Should_Have_UnsupportedRepo_When_Null_Argument()
+        {
+            var result = ReadmeRewriter.Rewrite(RewriteTagsOptions.None, "", "/readme.md", null, null, null, DummyReadmeRelativeFileExists);
+
+            Assert.That(result.UnsupportedRepo, Is.True);
         }
     }
 }

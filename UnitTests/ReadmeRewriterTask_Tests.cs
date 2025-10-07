@@ -167,14 +167,15 @@ namespace UnitTests
             ReadmeRewriterResult readmeRewriterResult, 
             RewriteTagsOptions rewriteTagsOptions = RewriteTagsOptions.Error, 
             string? readmeRelativePath = null,
-            string expectedReadmeRelativePath = "readme.md" )
+            string? expectedReadmeRelativePath = null,
+            string? expectedRepositoryUrl = null)
         {
             _readmeRewriterTask.ReadmeRelativePath = readmeRelativePath;
             _mockReadmeRewriter.Setup(readmeRewriter => readmeRewriter.Rewrite(
                 rewriteTagsOptions,
                 DummyIOHelper.ReadmeText,
-                expectedReadmeRelativePath,
-                repositoryUrl,
+                expectedReadmeRelativePath ?? "readme.md",
+                expectedRepositoryUrl ?? repositoryUrl,
                 repositoryBranch,
                 removeReplaceSettingsResult.Settings, 
                 It.IsAny<IReadmeRelativeFileExists>())
@@ -320,6 +321,20 @@ namespace UnitTests
             ExecuteReadmeExists();
 
             Assert.That(_dummyLogBuildEngine.SingleErrorMessage(),Is.EqualTo("error1"));
+        }
+
+        [Test]
+        public void Should_Use_ReadmeRepositoryUrl_If_Provided()
+        {
+            _readmeRewriterTask.ReadmeRepositoryUrl = "readmeRepositoryUrl";
+
+            SetupReadMeRewriter(
+                new ReadmeRewriterResult(null, [], [], false, false),
+                RewriteTagsOptions.Error, 
+                null,
+                null,
+                _readmeRewriterTask.ReadmeRepositoryUrl);
+            _ = ExecuteReadmeExists();
         }
     }
 }
