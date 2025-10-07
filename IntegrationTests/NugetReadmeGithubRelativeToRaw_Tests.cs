@@ -20,9 +20,10 @@ namespace IntegrationTests
         [Test]
         public void Should_Have_Correct_ReadMe_In_Generated_NuPkg()
         {
+            // relative to repo root
             var relativeReadme = @"
 Before
-![image](images/image.png)
+![image](/images/image.png)
 After
 ";
 
@@ -32,7 +33,7 @@ Before
 After
 ";
 
-            Test(relativeReadme, expectedNuGetReadme);
+            Test(relativeReadme, expectedNuGetReadme,"","","readmedir/readme.md",addRelativeFile => addRelativeFile("images/image.png",""));
         }
 
         [Test]
@@ -85,14 +86,17 @@ This will be replaced
 Before
 {replacement}";
 
-            Test(relativeReadme, expectedNuGetReadme, removeReplaceItems,"",addRelativeFile => addRelativeFile("relative.text",replacement));
+            Test(relativeReadme, expectedNuGetReadme, removeReplaceItems, "", "readme.md", addRelativeFile => addRelativeFile("relative.text", replacement));
 
         }
 
-
-
-
-        private void Test(string relativeReadme, string expectedNuGetReadme, string removeReplaceItems = "",string additionalProperties = "", Action<Action<string, string>>? addRelativeFileCallback = null)
+        private void Test(
+            string relativeReadme,
+            string expectedNuGetReadme,
+            string removeReplaceItems = "",
+            string additionalProperties = "",
+            string relativeReadmePath = "readme.md",
+            Action<Action<string, string>>? addRelativeFileCallback = null)
         {
             DirectoryInfo? projectDirectory = null;
             var projectWithReadMe = @$"<Project Sdk=""Microsoft.NET.Sdk"">
@@ -103,6 +107,7 @@ Before
         <PackageReadmeFile>package-readme.md</PackageReadmeFile>
         <PackageProjectUrl>https://github.com/tonyhallett/arepo</PackageProjectUrl>
         <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+        <BaseReadme>{relativeReadmePath}</BaseReadme>
         <IsPackable>True</IsPackable>
 {additionalProperties}
      </PropertyGroup>
@@ -119,10 +124,9 @@ Before
                 (projectPath) =>
                 {
                     projectDirectory = new DirectoryInfo(Path.GetDirectoryName(projectPath)!);
-                    Action<string, string> createRelativeFile = (fileName,contents) => File.WriteAllText(Path.Combine(projectDirectory.FullName, fileName), contents);
-                    createRelativeFile("readme.md", relativeReadme);
+                    Action<string, string> createRelativeFile = (relativeFile, contents) => SafeFileWriteAllText(Path.Combine(projectDirectory.FullName, relativeFile), contents);
+                    createRelativeFile(relativeReadmePath, relativeReadme);
                     addRelativeFileCallback?.Invoke(createRelativeFile);
-
                 });
 
             if (projectDirectory == null) throw new Exception("Project directory not set");
@@ -149,7 +153,18 @@ Before
 
         private static string GetDependentNuGetPath(DirectoryInfo directoryInfo) => directoryInfo.GetFiles("*.nupkg", SearchOption.AllDirectories).First().FullName;
 
-        private static string GetNuPkgPath() => GetProjectDirectory().GetFiles("*.nupkg", SearchOption.AllDirectories).First().FullName;
+        private static string GetNuPkgPath()
+        {
+            var projectDirectory = GetProjectDirectory();
+#if DEBUG
+    var debugOrRelease = "Debug";
+#else
+            var debugOrRelease = "Release";
+#endif
+            var debugOrReleaseDirectory = projectDirectory.GetDescendantDirectory("bin", debugOrRelease);
+            return debugOrReleaseDirectory.GetFiles("*.nupkg", SearchOption.AllDirectories).First().FullName;
+
+        }
 
         private static DirectoryInfo GetSolutionDirectory()
         {
@@ -158,7 +173,7 @@ Before
             {
                 directory = directory.Parent;
             }
-            if(directory == null) throw new Exception("Could not find solution directory");
+            if (directory == null) throw new Exception("Could not find solution directory");
             return directory;
         }
 
@@ -166,6 +181,29 @@ Before
         {
             var solutionDirectory = GetSolutionDirectory();
             return new DirectoryInfo(Path.Combine(solutionDirectory.FullName, NugetReadmeGithubRelativeToRaw));
+        }
+
+        private static void SafeFileWriteAllText(string path, string contents)
+        {
+            var directory = Path.GetDirectoryName(path);
+            if (!Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory!);
+            }
+            File.WriteAllText(path, contents);
+        }
+    }
+
+    public static class DirectoryInfoExtensions
+    {
+        public static DirectoryInfo GetDescendantDirectory(this DirectoryInfo directory, params string[] paths)
+        {
+            foreach (var path in paths)
+            {
+                directory = new DirectoryInfo(Path.Combine(directory.FullName, path));
+            }
+
+            return directory;
         }
     }
 }

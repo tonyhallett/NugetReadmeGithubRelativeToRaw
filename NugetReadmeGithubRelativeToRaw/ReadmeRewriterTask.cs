@@ -31,8 +31,6 @@ namespace NugetReadmeGithubRelativeToRaw
 
         internal IIOHelper IOHelper { get; set; } = InputOutputHelper.Instance;
 
-        internal IReadmeRelativeFileExistsFactory ReadmeRelativeFileExistsFactory { get; set; } = new ReadmeRelativeFileExistsFactory();
-
         internal IMessageProvider MessageProvider { get; set; } = NugetReadmeGithubRelativeToRaw.MessageProvider.Instance;
 
         internal IReadmeRewriter ReadmeRewriter { get; set; } = new ReadmeRewriter();
@@ -46,6 +44,7 @@ namespace NugetReadmeGithubRelativeToRaw
 
         public override bool Execute()
         {
+            LaunchDebuggerIfRequired();
             var readmeRelativePath = ReadmeRelativePath ?? "readme.md";
             var readmePath = IOHelper.CombinePaths(ProjectDirectoryPath, readmeRelativePath);
             if (!IOHelper.FileExists(readmePath))
@@ -58,6 +57,17 @@ namespace NugetReadmeGithubRelativeToRaw
             }
             
             return !Log.HasLoggedErrors;
+        }
+
+        private void LaunchDebuggerIfRequired()
+        {
+            if (Environment.GetEnvironmentVariable("DebugReadmeRewriter") == "1")
+            {
+                if (!System.Diagnostics.Debugger.IsAttached)
+                {
+                    System.Diagnostics.Debugger.Launch();
+                }
+            }
         }
 
         private void TryRewrite(string readmeContents, string readmeRelativePath)
@@ -80,7 +90,7 @@ namespace NugetReadmeGithubRelativeToRaw
 
         private void Rewrite(string readmeContents, string readmeRelativePath, RemoveReplaceSettings? removeReplaceSettings)
         {
-            var readmeRelativeFileExists = ReadmeRelativeFileExistsFactory.Create(ProjectDirectoryPath, readmeRelativePath, IOHelper);
+            var readmeRelativeFileExists = new ReadmeRelativeFileExists(ProjectDirectoryPath, readmeRelativePath);
             var readmeRewriterResult = ReadmeRewriter.Rewrite(
                 GetRewriteTagsOptions(),
                 readmeContents,

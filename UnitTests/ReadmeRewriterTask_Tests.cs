@@ -12,13 +12,11 @@ namespace UnitTests
         private const string repositoryBranch = "repositorybranch";
         private const string projectDirectoryPath = "projectdir";
         private const string removeCommentIdentifiers = "removeCommentIdentifiers";
-        private readonly IReadmeRelativeFileExists _readmeRelativeFileExists = new Mock<IReadmeRelativeFileExists>().Object;
         private readonly ITaskItem[] removeReplaceTaskItems = [new Mock<ITaskItem>().Object];
         private DummyIOHelper _ioHelper;
         private Mock<IRemoveReplaceSettingsProvider> _mockRemoveReplaceSettingsProvider;
         private Mock<IReadmeRewriter> _mockReadmeRewriter;
         private DummyLogBuildEngine _dummyLogBuildEngine;
-        private Mock<IReadmeRelativeFileExistsFactory> _mockReadmeRelativeFileExistsFactory;
         private ReadmeRewriterTask _readmeRewriterTask;
         private TestRemoveReplaceSettingsResult removeReplaceSettingsResult;
 
@@ -68,9 +66,6 @@ namespace UnitTests
             _mockRemoveReplaceSettingsProvider = new Mock<IRemoveReplaceSettingsProvider>();
             _mockReadmeRewriter = new Mock<IReadmeRewriter>();
             _dummyLogBuildEngine = new DummyLogBuildEngine();
-            _mockReadmeRelativeFileExistsFactory = new Mock<IReadmeRelativeFileExistsFactory>();
-            _mockReadmeRelativeFileExistsFactory.Setup(readmeRelativeFileExistsFactory => readmeRelativeFileExistsFactory.Create(projectDirectoryPath, It.IsAny<string>(), _ioHelper))
-                .Returns(_readmeRelativeFileExists);
             _readmeRewriterTask = new ReadmeRewriterTask
             {
                 BuildEngine = _dummyLogBuildEngine,
@@ -81,7 +76,6 @@ namespace UnitTests
                 RepositoryUrl = repositoryUrl,
                 RepositoryBranch = repositoryBranch,
                 ProjectDirectoryPath = projectDirectoryPath,
-                ReadmeRelativeFileExistsFactory = _mockReadmeRelativeFileExistsFactory.Object
             };
             removeReplaceSettingsResult = new TestRemoveReplaceSettingsResult();
             _mockRemoveReplaceSettingsProvider.Setup(removeReplaceSettingsProvider => removeReplaceSettingsProvider.Provide(removeReplaceTaskItems, removeCommentIdentifiers))
@@ -111,16 +105,28 @@ namespace UnitTests
 
         [TestCase((string?)null, "readme.md")]
         [TestCase("relativeReadme.md", "relativeReadme.md")]
-        public void Should_Pass_The_ReadmeRelativeFileExists_From_The_Factory_To_The_ReadmeRewriter(
+        public void Should_Pass_The_ReadmeRelativeFileExists_To_The_ReadmeRewriter(
             string? readmeRelativePath,
             string expectedReadmeRelativePath
             )
         {
-            SetupReadMeRewriter(new ReadmeRewriterResult(null, [],[], false, false), RewriteTagsOptions.Error, readmeRelativePath, expectedReadmeRelativePath);
+            SetupReadMeRewriter(
+                new ReadmeRewriterResult(null, [],[], false, false), 
+                RewriteTagsOptions.Error, 
+                readmeRelativePath, 
+                expectedReadmeRelativePath);
             
             _ = ExecuteReadmeExists();
-            //ReadmeRewriter
-            _mockReadmeRelativeFileExistsFactory.Verify(readmeRelativeFileExistsFactory => readmeRelativeFileExistsFactory.Create(projectDirectoryPath, expectedReadmeRelativePath, _ioHelper));
+
+            _mockReadmeRewriter.Verify(readmeRewriter => readmeRewriter.Rewrite(
+                It.IsAny<RewriteTagsOptions>(),
+                DummyIOHelper.ReadmeText,
+                expectedReadmeRelativePath,
+                repositoryUrl,
+                repositoryBranch,
+                removeReplaceSettingsResult.Settings,
+                It.Is<ReadmeRelativeFileExists>(readmeRelativeFileExists => readmeRelativeFileExists.ReadmeRelativePath == expectedReadmeRelativePath && readmeRelativeFileExists.ProjectDirectoryPath == projectDirectoryPath))
+            );
         }
 
         [Test]
@@ -171,7 +177,7 @@ namespace UnitTests
                 repositoryUrl,
                 repositoryBranch,
                 removeReplaceSettingsResult.Settings, 
-                _readmeRelativeFileExists)
+                It.IsAny<IReadmeRelativeFileExists>())
             ).Returns(readmeRewriterResult);
         }
 
@@ -201,7 +207,7 @@ namespace UnitTests
                 repositoryUrl,
                 repositoryBranch,
                 It.IsAny<RemoveReplaceSettings>(), 
-                _readmeRelativeFileExists)).Returns(readmeRewriterResult);
+                It.IsAny<IReadmeRelativeFileExists>())).Returns(readmeRewriterResult);
 
             var result = ExecuteReadmeExists();
 
@@ -244,7 +250,7 @@ namespace UnitTests
                 repositoryUrl,
                 repositoryBranch,
                 It.IsAny<RemoveReplaceSettings>(), 
-                _readmeRelativeFileExists)).Returns(readmeRewriterResult);
+                It.IsAny<IReadmeRelativeFileExists>())).Returns(readmeRewriterResult);
 
             var result = ExecuteReadmeExists();
 
@@ -269,7 +275,7 @@ namespace UnitTests
                 repositoryUrl,
                 repositoryBranch,
                 removeReplaceSettingsResult.Settings,
-                _readmeRelativeFileExists)).Returns(readmeRewriterResult);
+                It.IsAny<IReadmeRelativeFileExists>())).Returns(readmeRewriterResult);
 
             var result = ExecuteReadmeExists();
 

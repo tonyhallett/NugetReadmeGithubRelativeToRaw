@@ -3,21 +3,19 @@
 namespace NugetReadmeGithubRelativeToRaw
 {
     internal class ReadmeRelativeFileExists : IReadmeRelativeFileExists {
-        private readonly string _projectDirectoryPath;
-        private readonly string _readmeRelativePath;
-        private readonly IIOHelper _ioHelper;
+        public string ProjectDirectoryPath { get; }
+        public string ReadmeRelativePath { get; }
 
-        public ReadmeRelativeFileExists(string projectDirectoryPath, string readmeRelativePath, IIOHelper ioHelper)
+        public ReadmeRelativeFileExists(string projectDirectoryPath, string readmeRelativePath)
         {
             readmeRelativePath = NormalizeDirectorySeparators(readmeRelativePath);
-            _projectDirectoryPath = projectDirectoryPath;
-            _readmeRelativePath = readmeRelativePath;
-            _ioHelper = ioHelper;
+            ProjectDirectoryPath = projectDirectoryPath;
+            ReadmeRelativePath = readmeRelativePath;
         }
 
         public bool Exists(string relativePath)
         {
-            return _ioHelper.FileExists(GetPath(relativePath));
+            return File.Exists(GetPath(relativePath));
         }
 
         private string NormalizeDirectorySeparators(string path)
@@ -34,10 +32,10 @@ namespace NugetReadmeGithubRelativeToRaw
             // repo relative
             if (relativePath.StartsWith(Path.DirectorySeparatorChar.ToString()))
             {
-                return Path.Combine(_projectDirectoryPath, relativePath.TrimStart(Path.DirectorySeparatorChar));
+                return Path.Combine(ProjectDirectoryPath, relativePath.TrimStart(Path.DirectorySeparatorChar));
             }
 
-            string readmeFullPath = Path.Combine(_projectDirectoryPath, _readmeRelativePath);
+            string readmeFullPath = Path.Combine(ProjectDirectoryPath, ReadmeRelativePath);
             string readmeDirectory = Path.GetDirectoryName(readmeFullPath)!;
             return Path.Combine(readmeDirectory, relativePath);
         }

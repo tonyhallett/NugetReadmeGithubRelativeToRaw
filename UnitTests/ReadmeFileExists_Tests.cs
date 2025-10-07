@@ -1,49 +1,68 @@
-﻿using Moq;
-using NugetReadmeGithubRelativeToRaw;
+﻿using NugetReadmeGithubRelativeToRaw;
 
 namespace UnitTests
 {
     internal class ReadmeFileExists_Tests
     {
-        private Mock<IIOHelper> _mockIOHelper;
-        private readonly ReadmeRelativeFileExistsFactory readmeFileExistsFactory = new ReadmeRelativeFileExistsFactory();
+        private DirectoryInfo _tempProjectDirectory;
 
         [SetUp]
         public void Setup()
         {
-            _mockIOHelper = new Mock<IIOHelper>(MockBehavior.Strict);
+            _tempProjectDirectory = Directory.CreateTempSubdirectory();
+        }
+
+        private ReadmeRelativeFileExists Initialize(string readmeRelativePath)
+        {
+            return new ReadmeRelativeFileExists(
+                _tempProjectDirectory.FullName,
+                readmeRelativePath);
+        }
+
+
+        [TestCase(true)]
+        [TestCase(false)]
+        public void Should_Work_Relative_To_Repo_Root(bool exists)
+        {
+            var readmeRelativeFileExists = Initialize("readmedir/readme.md");
+            var filePath = Path.Combine(_tempProjectDirectory.FullName, "file.txt");
+            if (exists)
+            {
+                File.WriteAllText(filePath, "test");
+            }
+            
+            Assert.That(readmeRelativeFileExists.Exists("/file.txt"), Is.EqualTo(exists));
+        }
+
+        [TestCase("./")]
+        [TestCase("")]
+        public void Should_Work_Relative_To_Readme(string prefix)
+        {
+            var readmeRelativeFileExists = Initialize("readmedir/readme.md");
+            var readmeDirectoryPath = Path.Combine(_tempProjectDirectory.FullName, "readmedir");
+            Directory.CreateDirectory(readmeDirectoryPath);
+            var filePath = Path.Combine(readmeDirectoryPath, "file.txt");
+            File.WriteAllText(filePath, "test");
+
+            Assert.That(readmeRelativeFileExists.Exists($"{prefix}file.txt"), Is.True);
         }
 
         [Test]
-        public void Should_Work_Repo_Relatively()
+        public void Should_Work_Relative_To_Readme_Parent()
         {
-            var readmeFileExists = readmeFileExistsFactory.Create("C:\\Users\\tonyh\\Repos\\ProjectDir", "subdir/readme.md", _mockIOHelper.Object);
+            var readmeRelativeFileExists = Initialize("parent/readmedir/readme.md");
+            var parentDirectoryPath = Path.Combine(_tempProjectDirectory.FullName, "parent");
+            Directory.CreateDirectory(parentDirectoryPath);
+            var filePath = Path.Combine(parentDirectoryPath, "file.txt");
+            File.WriteAllText(filePath, "test");
 
-            _mockIOHelper.Setup(ioHelper => ioHelper.FileExists("C:\\Users\\tonyh\\Repos\\ProjectDir\\repoRelative.png")).Returns(true);
-
-            Assert.That(readmeFileExists.Exists("/repoRelative.png"), Is.True);
+            Assert.That(readmeRelativeFileExists.Exists($"../file.txt"), Is.True);
         }
 
-        [Test]
-        public void Should_Work_Relative_To_Readme_Forwardslash()
-        {
-            var readmeFileExists = readmeFileExistsFactory.Create("C:\\Users\\tonyh\\Repos\\ProjectDir", "subdir/readme.md", _mockIOHelper.Object);
 
-            _mockIOHelper.Setup(ioHelper => ioHelper.FileExists("C:\\Users\\tonyh\\Repos\\ProjectDir\\subdir\\readmeRelative.png")).Returns(true);
-
-            Assert.That(readmeFileExists.Exists("readmeRelative.png"), Is.True);
+        [TearDown] 
+        public void Teardown() {
+            _tempProjectDirectory.Delete(true);
         }
-
-        [Test]
-        public void Should_Work_Relative_To_Readme_Backslash()
-        {
-            var readmeFileExists = readmeFileExistsFactory.Create("C:\\Users\\tonyh\\Repos\\ProjectDir", "subdir\\readme.md", _mockIOHelper.Object);
-
-            _mockIOHelper.Setup(ioHelper => ioHelper.FileExists("C:\\Users\\tonyh\\Repos\\ProjectDir\\subdir\\readmeRelative.png")).Returns(true);
-
-            Assert.That(readmeFileExists.Exists("readmeRelative.png"), Is.True);
-        }
-
-        // next ./ and ../ tests
     }
 }
