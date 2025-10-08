@@ -1,8 +1,4 @@
-using System.IO.Compression;
-using System.Reflection;
-using System.Text;
 using NugetBuildTargetsIntegrationTesting;
-using NugetReadmeGithubRelativeToRaw;
 using NugetReadmeGithubRelativeToRaw.Rewriter;
 
 namespace IntegrationTests
@@ -10,7 +6,7 @@ namespace IntegrationTests
     public class NugetReadmeGithubRelativeToRaw_Tests
     {
         private readonly NugetBuildTargetsTestSetup _nugetBuildTargetsTestSetup = new NugetBuildTargetsTestSetup();
-        private const string NugetReadmeGithubRelativeToRaw = "NugetReadmeGithubRelativeToRaw";
+        
 
         [OneTimeTearDown]
         public void TearDown()
@@ -43,12 +39,12 @@ After
             var replace = "# Replace";
             var replacement = "Nuget only";
             
-            var removeReplaceItems = CreateReadmeRemoveReplaceItem(
+            var removeReplaceItems = ReadmeRemoveReplaceItemString.Create(
                 "1",
                 [
-                    CreateMetadataElement(nameof(RemoveReplaceMetadata.Start), replace),
-                    CreateMetadataElement(nameof(RemoveReplaceMetadata.CommentOrRegex), nameof(CommentOrRegex.Regex)),
-                    CreateMetadataElement(nameof(RemoveReplaceMetadata.ReplacementText), replacement)
+                    ReadmeRemoveReplaceItemString.StartElement(replace),
+                    ReadmeRemoveReplaceItemString.CommentOrRegexElement(CommentOrRegex.Regex),
+                    ReadmeRemoveReplaceItemString.ReplacementTextElement(replacement)
                 ]);
 
             var relativeReadme = @$"
@@ -65,29 +61,17 @@ Before
 
         }
 
-        private static string CreateReadmeRemoveReplaceItem(string include, IEnumerable<string> metadata)
-        {
-            var sb = new StringBuilder();
-            sb.AppendLine(@$"<{MsBuildPropertyItemNames.ReadmeRemoveReplace} Include=""{include}"">");
-            foreach (var meta in metadata)
-            {
-                sb.AppendLine(meta);
-            }
-            sb.AppendLine($@"</{MsBuildPropertyItemNames.ReadmeRemoveReplace}>");
-            return sb.ToString();
-        }
-
         [Test]
         public void Should_Have_Correct_Replaced_To_End_From_File_Readme_In_Generated_NuPkg()
         {
             var replace = "# Replace";
             var replacement = "Nuget only file replace";
 
-            var removeReplaceItems = CreateReadmeRemoveReplaceItem("replace.txt",
+            var removeReplaceItems = ReadmeRemoveReplaceItemString.Create("replace.txt",
                 [
-                    CreateMetadataElement(nameof(RemoveReplaceMetadata.Start), replace),
-                    CreateMetadataElement(nameof(RemoveReplaceMetadata.CommentOrRegex), nameof(CommentOrRegex.Regex)),
-                    CreateMetadataElement(nameof(RemoveReplaceMetadata.ReplacementText), replacement)
+                    ReadmeRemoveReplaceItemString.StartElement(replace),
+                    ReadmeRemoveReplaceItemString.CommentOrRegexElement(CommentOrRegex.Regex),
+                    ReadmeRemoveReplaceItemString.ReplacementTextElement(replacement)
                 ]);
             var relativeReadme = @$"
 Before
@@ -103,20 +87,88 @@ Before
 
         }
 
+        [Test]
+        public void Should_Have_RepositoryCommit_When_PublishRepositoryUrl_GitHub()
+        {
+            PublishRepositoryUrlTest(
+                "https://github.com/owner/repo.git",
+                (repoRootRelativeImageUrl, commitId) => $"https://raw.githubusercontent.com/owner/repo/{commitId}{repoRootRelativeImageUrl}",
+                (repoRootRelativeImageUrl, commitId) => $"https://github.com/owner/repo/blob/{commitId}{repoRootRelativeImageUrl}");
+        }
+
+        /*
+            "https://gitlab.com/user/repo.git", "main", "https://gitlab.com/user/repo/-/blob/main", "https://gitlab.com/user/repo/-/raw/main" }
+        */
+
+        [Test]
+        public void Should_Have_RepositoryCommit_When_PublishRepositoryUrl_GitLab()
+        {
+            PublishRepositoryUrlTest(
+                "https://gitlab.com/user/repo.git",
+                (repoRootRelativeImageUrl, commitId) => $"https://gitlab.com/user/repo/-/raw/{commitId}{repoRootRelativeImageUrl}",
+                (repoRootRelativeImageUrl, commitId) => $"https://gitlab.com/user/repo/-/blob/{commitId}{repoRootRelativeImageUrl}");
+        }
+
+        private void PublishRepositoryUrlTest(
+            string remoteUrl, 
+            Func<string,string,string> getExpectedAbsoluteImageUrl, 
+            Func<string,string,string> getExpectedAbsoluteLinkUrl)
+        {
+
+            var additionalProperties = "<PublishRepositoryUrl>True</PublishRepositoryUrl>";
+
+            var commitId = "f5eb304528a94c667be2ab0f921b3995746c7ce8";
+            var gitConfig = $@"
+[core]
+	repositoryformatversion = 0
+[remote ""origin""]
+	url = {remoteUrl}
+";
+            var headBranchPath = "refs/heads/myBranch";
+            var headContent = $"ref: {headBranchPath}";
+
+            // relative to repo root
+            var relativeImageUrl = "/images/image.png";
+            var relativeLinkUrl = "/some/page.html";
+            var repoReadme = $@"
+![image]({relativeImageUrl})
+
+[link]({relativeLinkUrl})";
+
+            var expectedNuGetReadme = $@"
+![image]({getExpectedAbsoluteImageUrl(relativeImageUrl,commitId)})
+
+[link]({getExpectedAbsoluteLinkUrl(relativeLinkUrl, commitId)})";
+            Test(repoReadme, expectedNuGetReadme,addRepositoryUrl:false, additionalProperties: additionalProperties, addRelativeFileCallback: addRelativeFile =>
+            {
+                addRelativeFile("images/image.png", "");
+                addRelativeFile("some/page.html", "");
+
+                addRelativeFile(".git/config", gitConfig);
+                addRelativeFile(".git/HEAD", headContent);
+                addRelativeFile($".git/{headBranchPath}", commitId);
+            });
+        }
+
+
         private void Test(
-            string relativeReadme,
+            string repoReadme,
             string expectedNuGetReadme,
             string removeReplaceItems = "",
             string additionalProperties = "",
             string relativeReadmePath = "readme.md",
-            Action<Action<string, string>>? addRelativeFileCallback = null)
+            Action<Action<string, string>>? addRelativeFileCallback = null,
+            bool addRepositoryUrl = true
+            )
         {
-            DirectoryInfo? projectDirectory = null;
+
+            var repositoryUrl = addRepositoryUrl ? "<RepositoryUrl>https://github.com/tonyhallett/arepo.git</RepositoryUrl>" : "";
+            DirectoryInfo ? projectDirectory = null;
             var projectWithReadMe = @$"<Project Sdk=""Microsoft.NET.Sdk"">
     <PropertyGroup>
         <TargetFramework>net461</TargetFramework>
         <Authors>TonyHUK</Authors>
-        <RepositoryUrl>https://github.com/tonyhallett/arepo.git</RepositoryUrl>
+        {repositoryUrl}
         <PackageReadmeFile>package-readme.md</PackageReadmeFile>
         <PackageProjectUrl>https://github.com/tonyhallett/arepo</PackageProjectUrl>
         <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
@@ -128,95 +180,25 @@ Before
 {removeReplaceItems}
      </ItemGroup>
 </Project>
-"; // todo
+";
 
-            var nuPkgPath = GetNuPkgPath();
+            var nuPkgPath = NupkgProvider.GetNuPkgPath();
             _nugetBuildTargetsTestSetup.Setup(
                 projectWithReadMe,
                 nuPkgPath,
                 (projectPath) =>
                 {
                     projectDirectory = new DirectoryInfo(Path.GetDirectoryName(projectPath)!);
-                    Action<string, string> createRelativeFile = (relativeFile, contents) => SafeFileWriteAllText(Path.Combine(projectDirectory.FullName, relativeFile), contents);
-                    createRelativeFile(relativeReadmePath, relativeReadme);
+                    Action<string, string> createRelativeFile = (relativeFile, contents) => FileHelper.WriteAllTextEnsureDirectory(Path.Combine(projectDirectory.FullName, relativeFile), contents);
+                    createRelativeFile(relativeReadmePath, repoReadme);
                     addRelativeFileCallback?.Invoke(createRelativeFile);
                 });
 
             if (projectDirectory == null) throw new Exception("Project directory not set");
 
-            var dependentNuGetReadMe = GetDependentNuGetReadMe(projectDirectory!, "package-readme.md");
+            var dependentNuGetReadMe = NupkgReadmeReader.Read(projectDirectory!, "package-readme.md");
 
             Assert.That(dependentNuGetReadMe, Is.EqualTo(expectedNuGetReadme));
-        }
-
-        private static string CreateMetadataElement(string metadataName, string contents)
-            => $"<{metadataName}>{contents}</{metadataName}>";
-
-        private static string GetDependentNuGetReadMe(DirectoryInfo directoryInfo, string readMeFileName)
-        {
-            var dependentNuGetPath = GetDependentNuGetPath(directoryInfo);
-            using var zip = ZipFile.OpenRead(dependentNuGetPath);
-
-            // nuget always stores readme at the root of the package
-            var entry = zip.GetEntry(readMeFileName);
-
-            using var reader = new StreamReader(entry!.Open());
-            return reader.ReadToEnd();
-        }
-
-        private static string GetDependentNuGetPath(DirectoryInfo directoryInfo) => directoryInfo.GetFiles("*.nupkg", SearchOption.AllDirectories).First().FullName;
-
-        private static string GetNuPkgPath()
-        {
-            var projectDirectory = GetProjectDirectory();
-#if DEBUG
-    var debugOrRelease = "Debug";
-#else
-            var debugOrRelease = "Release";
-#endif
-            var debugOrReleaseDirectory = projectDirectory.GetDescendantDirectory("bin", debugOrRelease);
-            return debugOrReleaseDirectory.GetFiles("*.nupkg", SearchOption.AllDirectories).First().FullName;
-
-        }
-
-        private static DirectoryInfo GetSolutionDirectory()
-        {
-            var directory = new FileInfo(Assembly.GetExecutingAssembly().Location).Directory;
-            while (directory != null && directory.Name != NugetReadmeGithubRelativeToRaw)
-            {
-                directory = directory.Parent;
-            }
-            if (directory == null) throw new Exception("Could not find solution directory");
-            return directory;
-        }
-
-        private static DirectoryInfo GetProjectDirectory()
-        {
-            var solutionDirectory = GetSolutionDirectory();
-            return new DirectoryInfo(Path.Combine(solutionDirectory.FullName, NugetReadmeGithubRelativeToRaw));
-        }
-
-        private static void SafeFileWriteAllText(string path, string contents)
-        {
-            var directory = Path.GetDirectoryName(path);
-            if (!Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory!);
-            }
-            File.WriteAllText(path, contents);
-        }
-    }
-
-    public static class DirectoryInfoExtensions
-    {
-        public static DirectoryInfo GetDescendantDirectory(this DirectoryInfo directory, params string[] paths)
-        {
-            foreach (var path in paths)
-            {
-                directory = new DirectoryInfo(Path.Combine(directory.FullName, path));
-            }
-
-            return directory;
         }
     }
 }

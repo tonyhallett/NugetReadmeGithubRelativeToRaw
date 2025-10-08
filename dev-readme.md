@@ -156,7 +156,7 @@ The RepositoryCommit does not require PublishRepositoryUrl.
 ```
 
 and the sdk imports the targets providing the functionality above.
-[](https://github.com/dotnet/sdk/blob/b9f441a35351d260b51e7c682cebcf318270dac7/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Sdk.targets#L1373)
+[sdk import](https://github.com/dotnet/sdk/blob/b9f441a35351d260b51e7c682cebcf318270dac7/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Sdk.targets#L1373)
 ```xml
  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NET.Sdk.SourceLink.targets" Condition="'$(SuppressImplicitGitSourceLink)' != 'true'" />
 ```
@@ -210,6 +210,9 @@ Imports the Microsoft.SourceLink.Common.props that sets the conditional props
 </Project>
 ```
 
+If not an SDK style project then you can add the nuget package [Microsoft.Build.Tasks.Git](https://www.nuget.org/packages/Microsoft.Build.Tasks.Git).
+This is included with [Microsoft.SourceLink.GitHub](https://www.nuget.org/packages/Microsoft.SourceLink.GitHub/) and [Microsoft.SourceLink.GitLab](https://www.nuget.org/packages/Microsoft.SourceLink.GitLab/).
+
 
 # How the target runs in the correct place, so as to generate PackageReadmeFile in time.
 
@@ -262,6 +265,10 @@ This runs before GenerateNuspec as seen in the GenerateNuspecDependsOn
 ## Why DependsOnTargets="_InitializeNuspecRepositoryInformationProperties"
 
 That target sets RepositoryUrl, RepositoryBranch and RepositoryCommit if not already set and PublishRepositoryUrl is true.
+
+This has been tested in the integration tests by manually creating the .git directory with the relevant files as required by the [LocateRepository task](https://github.com/dotnet/sourcelink/blob/d19562d86335814367a0eb67e05500f659b16d26/src/Microsoft.Build.Tasks.Git/LocateRepository.cs#L11)
+
+
 
 -----
 The [packing the readme advice](https://learn.microsoft.com/en-us/nuget/reference/errors-and-warnings/nu5039)

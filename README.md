@@ -18,16 +18,29 @@ An [MsBuild custom target](https://learn.microsoft.com/en-us/nuget/concepts/msbu
 
 # MSBuild Properties
 
-| Property                 | Default   | Required                     | Description                                                    |
-| --------------------     |---------  |----------------------------- | -------------------------------------------------------------- |
-| BaseReadme               | README.md | No                           | The readme relative path to transform                          |
-| PackageReadmeFile        |           | Yes.                         | The output readme relative path. NuGet property                |
-| RepositoryUrl            |           | Not if ReadmeRepositoryUrl   | A GitHub or GitLab RepositoryUrl                               |
-| ReadmeRepositoryUrl      |           | Not if RepositoryUrl         | A GitHub or GitLab RepositoryUrl NuGet property                |
-| RepositoryRef            | master    | No.                          | The ref to use for the raw URL.                                |
-| RepositoryCommit         | master    | No.                          | The ref to use for the raw URL.                                |
-| RepositoryBranch         | master    | No.                          | The ref to use for the raw URL.                                |
-| RemoveCommentIdentifiers |           | No.                          | The format is - *startidentifier*;*endidentifier*              |
+| Property                 | Default   | Required                     | Nuget Property | Description                                                       |
+| --------------------     |---------  |----------------------------- | ---------------|-----------------------------------------------                    |
+| BaseReadme               | README.md | No                           |                | The readme relative path to transform                             |
+| PackageReadmeFile        |           | Yes.                         |                | The output readme relative path. NuGet property                   |
+|                          |           |                              |                |                                                                   |
+|                          |           |                              |                | A GitHub or GitLab repository url ( .git ) - order of precedence  |
+| ReadmeRepositoryUrl      |           | Not if RepositoryUrl         |                |                                                                   |
+| RepositoryUrl            |           | Not if ReadmeRepositoryUrl   |      Yes       |                                                                   |
+|                          |           |                              |                                                                                    |
+|                          |           |                              |                | The ref part of the generated absolute url in order of precedence |
+| RepositoryRef            | master    | No.                          |                |                                                                   |
+| RepositoryCommit         | master    | No.                          |      Yes       |                                                                   |
+| RepositoryBranch         | master    | No.                          |      Yes       |                                                                   |
+|                          |           |                              |                |                                                                   |
+| RemoveCommentIdentifiers |           | No.                          | The format is - *startidentifier*;*endidentifier*                                  |
+
+Of the ref MSBuild properties, RepositoryCommit is probably what you should be used.
+Note that with SDK style projects the RepositoryUrl, RepositoryCommit and RepositoryBranch properties are automatically populated from the .git directory 
+if you set the MSBuild PublishRepositoryUrl property to True.
+
+Non SDK style you can add the nuget package [Microsoft.Build.Tasks.Git](https://www.nuget.org/packages/Microsoft.Build.Tasks.Git).
+This is included with [Microsoft.SourceLink.GitHub](https://www.nuget.org/packages/Microsoft.SourceLink.GitHub/) and [Microsoft.SourceLink.GitLab](https://www.nuget.org/packages/Microsoft.SourceLink.GitLab/).
+
 
 # Removal / replacement
 
