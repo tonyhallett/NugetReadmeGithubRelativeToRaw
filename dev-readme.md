@@ -1,15 +1,15 @@
 # Intellisense can show ITaskItem.GetMetadata return value as string?.  Do not rely upon this for absence of metadata as will be empty string.
 
+[MSBuild - Target build order](https://learn.microsoft.com/en-us/visualstudio/msbuild/target-build-order?view=vs-2022#determine-the-target-build-order)
+
+
 # How nuget packaging becomes part of the build process via DependsOnTargets
-[Determine the target build order](https://learn.microsoft.com/en-us/visualstudio/msbuild/target-build-order?view=vs-2022#determine-the-target-build-order)
-...
-> 4) Before the target is executed or skipped, its DependsOnTargets targets are run, unless the Condition attribute is applied to the target and evaluates to false.
- Note
-A target is considered skipped if it isn't executed because its output items are up-to-date (see incremental build). This check is done just before executing the tasks inside the target, and does not affect the order of execution of targets.
 
+<details>
+<summary>The SDK imports NuGet.Build.Tasks.Pack.targets</summary>
 
+The [sdk import](https://github.com/dotnet/sdk/blob/b9f441a35351d260b51e7c682cebcf318270dac7/src/Tasks/Microsoft.NET.Build.Tasks/sdk/Sdk.targets)
 
-The [sdk imports](https://github.com/dotnet/sdk/blob/b9f441a35351d260b51e7c682cebcf318270dac7/src/Tasks/Microsoft.NET.Build.Tasks/sdk/Sdk.targets)
 ```xml
   <!-- Import targets from NuGet.Build.Tasks.Pack package/Sdk -->
   <PropertyGroup Condition="'$(NuGetBuildTasksPackTargets)' == '' AND '$(ImportNuGetBuildTasksPackTargetsFromSdk)' != 'false'">
@@ -22,6 +22,10 @@ The [sdk imports](https://github.com/dotnet/sdk/blob/b9f441a35351d260b51e7c682ce
           Condition="Exists('$(NuGetBuildTasksPackTargets)') AND '$(ImportNuGetBuildTasksPackTargetsFromSdk)' == 'true'"/>
 
 ```
+</details>
+
+<details>
+<summary>The GenerateNuspec target will depend on Build ( conditionally )</summary>
 
 [NuGet.Build.Tasks.Pack.target](https://github.com/NuGet/NuGet.Client/blob/594fe417f2b3c7adfd970a91986f50d46780c8d9/src/NuGet.Core/NuGet.Build.Tasks/NuGet.Build.Tasks.Pack.targets)
 
@@ -59,20 +63,46 @@ The GenerateNuspec is included from
 </Target>
 ```
 
+</details>
+
+
+
 # How source control information is made available to the build - **important for the ref**
 
-GenerateNuspec depends on _InitializeNuspecRepositoryInformationProperties
+<details>
+
+<summary>GenerateNuspec depends on _InitializeNuspecRepositoryInformationProperties</summary>
+
 ```xml
 <Target Name="GenerateNuspec"
   Condition="'$(IsPackable)' == 'true' AND '$(PackageReferenceCompatibleProjectStyle)' == 'true'"
   Inputs="@(NuGetPackInput)" Outputs="@(NuGetPackOutput)"
   DependsOnTargets="$(GenerateNuspecDependsOn);_CalculateInputsOutputsForPack;_GetProjectReferenceVersions;_InitializeNuspecRepositoryInformationProperties">
 ```
-__InitializeNuspecRepositoryInformationProperties depends on InitializeSourceControlInformation which is just a marker target
-[marker target](https://github.com/dotnet/sourcelink/blob/d19562d86335814367a0eb67e05500f659b16d26/src/SourceLink.Common/buildMultiTargeting/Microsoft.SourceLink.Common.targets#L3)
+
+</details>
+
+ 
+<details>
+
+<summary>__InitializeNuspecRepositoryInformationProperties depends on InitializeSourceControlInformation</summary>>
+
+There is a [marker target](https://github.com/dotnet/sourcelink/blob/d19562d86335814367a0eb67e05500f659b16d26/src/SourceLink.Common/buildMultiTargeting/Microsoft.SourceLink.Common.targets#L3)
+It must be defined elsewhere too......
+
+</details>
+
+
+The target _InitializeSourceControlInformationFromSourceControlManager ( conditionally ) runs before InitializeSourceControlInformation.  
+Its DependsOnTargets, InitializeSourceControlInformationFromSourceControlManager and SourceControlManagerPublishTranslatedUrls   
+**supply the source control information to __InitializeNuspecRepositoryInformationProperties.**
+
+<details>
+
+<summary>Target</summary>
 
 [InitializeSourceControlInformation.targets](https://github.com/dotnet/sourcelink/blob/d19562d86335814367a0eb67e05500f659b16d26/src/SourceLink.Common/build/InitializeSourceControlInformation.targets)
-It is this target via its DependsOnTargets that supplies the source control information.  **It is conditional**
+
 ```xml
   <!--
     Triggers InitializeSourceControlInformationFromSourceControlManager target defined by a source control package Microsoft.Build.Tasks.{Git|Tfvc|...}.
@@ -84,12 +114,23 @@ It is this target via its DependsOnTargets that supplies the source control info
           BeforeTargets="InitializeSourceControlInformation"
           Condition="'$(EnableSourceControlManagerQueries)' == 'true'" />
 ```
-(InitializeSourceControlInformationFromSourceControlManager)[https://github.com/dotnet/sourcelink/blob/d19562d86335814367a0eb67e05500f659b16d26/src/Microsoft.Build.Tasks.Git/build/Microsoft.Build.Tasks.Git.targets#L20]
-Supplies the proerties ( of interest )
-ScmRepositoryUrl => PrivateRepositoryUrl => RepositoryUrl if not set and PublishRepositoryUrl is true
-SourceRevisionId => RepositoryCommit
-SourceBranchName => RepositoryBranch if RepositoryBranch not set and PublishRepositoryUrl is true
 
+</details>
+
+
+
+InitializeSourceControlInformationFromSourceControlManager supplies the proerties ( of interest )  
+ScmRepositoryUrl => PrivateRepositoryUrl => RepositoryUrl if not set and PublishRepositoryUrl is true  
+SourceRevisionId => RepositoryCommit  
+SourceBranchName => RepositoryBranch if RepositoryBranch not set and PublishRepositoryUrl is true  
+
+<details>
+
+<summary>Target and task</summary>
+
+[InitializeSourceControlInformationFromSourceControlManager](https://github.com/dotnet/sourcelink/blob/d19562d86335814367a0eb67e05500f659b16d26/src/Microsoft.Build.Tasks.Git/build/Microsoft.Build.Tasks.Git.targets#L20)
+
+[LocateRepository task](https://github.com/dotnet/sourcelink/blob/d19562d86335814367a0eb67e05500f659b16d26/src/Microsoft.Build.Tasks.Git/LocateRepository.cs#L11)
 ```
   <Target Name="InitializeSourceControlInformationFromSourceControlManager">
     <!--
@@ -115,7 +156,14 @@ SourceBranchName => RepositoryBranch if RepositoryBranch not set and PublishRepo
   </Target>
 
 ```
-This can supply the PrivateRepositoryUrl from ScmRepositoryUrl 
+
+</details>
+
+SourceControlManagerPublishTranslatedUrls ( can ) supply the PrivateRepositoryUrl from ScmRepositoryUrl 
+<details>
+
+<summary>Target</summary>
+
 ```xml
 	  <Target Name="SourceControlManagerPublishTranslatedUrls">
 	    <PropertyGroup>
@@ -134,9 +182,18 @@ This can supply the PrivateRepositoryUrl from ScmRepositoryUrl
   </Target>
 
 ```
+
+</details>
+
 Finally we see how, if we do not specify, the RepositoryUrl and RepositoryBranch will be available to GenerateNuspec if **PublishRepositoryUrl is true**.
 The RepositoryCommit does not require PublishRepositoryUrl.
 **It is conditional.**
+
+<details>
+
+<summary>_InitializeNuspecRepositoryInformationProperties Target</summary>
+
+( SourceControlInformationFeatureSupported will be set to true - [e.g](https://github.com/dotnet/sourcelink/blob/d19562d86335814367a0eb67e05500f659b16d26/src/SourceLink.Common/buildMultiTargeting/Microsoft.SourceLink.Common.targets#L12)
 
 ```xml
   <!--
@@ -155,7 +212,14 @@ The RepositoryCommit does not require PublishRepositoryUrl.
 
 ```
 
-and the sdk imports the targets providing the functionality above.
+</details>
+<br>
+and the sdk imports Microsoft.NET.Sdk.SourceLink.targets which imports Microsoft.Build.Tasks.Git.targets that provides the functionality as described before.
+
+<details>
+
+<summary>Imports</summary>
+
 [sdk import](https://github.com/dotnet/sdk/blob/b9f441a35351d260b51e7c682cebcf318270dac7/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Sdk.targets#L1373)
 ```xml
  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NET.Sdk.SourceLink.targets" Condition="'$(SuppressImplicitGitSourceLink)' != 'true'" />
@@ -188,7 +252,9 @@ and the sdk imports the targets providing the functionality above.
 
 ```
 [Microsoft.NET.Sdk.SourceLink.props](https://github.com/dotnet/sdk/blob/b9f441a35351d260b51e7c682cebcf318270dac7/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Sdk.SourceLink.props)
-Imports the Microsoft.SourceLink.Common.props that sets the conditional props
+Imports the [Microsoft.SourceLink.Common.props](https://github.com/dotnet/sourcelink/blob/d19562d86335814367a0eb67e05500f659b16d26/src/SourceLink.Common/build/Microsoft.SourceLink.Common.props) 
+that enables the one of the two conditions necessary for source control information - EnableSourceControlManagerQueries 
+
 ```xml
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
@@ -209,6 +275,8 @@ Imports the Microsoft.SourceLink.Common.props that sets the conditional props
 
 </Project>
 ```
+</details>
+<br>
 
 If not an SDK style project then you can add the nuget package [Microsoft.Build.Tasks.Git](https://www.nuget.org/packages/Microsoft.Build.Tasks.Git).
 This is included with [Microsoft.SourceLink.GitHub](https://www.nuget.org/packages/Microsoft.SourceLink.GitHub/) and [Microsoft.SourceLink.GitLab](https://www.nuget.org/packages/Microsoft.SourceLink.GitLab/).
