@@ -6,7 +6,40 @@ namespace IntegrationTests
     public class NugetReadmeGithubRelativeToRaw_Tests
     {
         private readonly NugetBuildTargetsTestSetup _nugetBuildTargetsTestSetup = new NugetBuildTargetsTestSetup();
+
+        private record RepoReadme(string Readme, string RelativePath = "readme.md", bool AddProjectElement = true, bool AddReadme = true);
+
+        private record GeneratedReadme(
+            string Expected,
+            string PackageReadMeFileElementContents = "package-readme.md",
+            string ZipEntryName = "package-readme.md",
+            string ExpectedGeneratedRelativePath = "package-readme.md")
+        { 
         
+            public static GeneratedReadme Simple(string expected) => new GeneratedReadme(expected);
+            
+            public static GeneratedReadme PackagePath(string expected, string packageReadMeFileElementContents)
+                => new GeneratedReadme(expected, packageReadMeFileElementContents, packageReadMeFileElementContents.Replace('\\', '/'));
+
+            public static GeneratedReadme OutputRelativePath(string expected, string expectedRelativeOutputPath)
+                => new GeneratedReadme(expected, ExpectedGeneratedRelativePath: expectedRelativeOutputPath);
+        }
+
+        private record ProjectFileAdditional(string Properties, string RemoveReplaceItems)
+        {
+            public static ProjectFileAdditional None { get; } = new ProjectFileAdditional("", "");
+
+            public static ProjectFileAdditional PropertiesOnly(string properties)
+            {
+                return new ProjectFileAdditional(properties, "");
+            }
+
+            public static ProjectFileAdditional RemoveReplaceItemsOnly(string removeReplaceItems)
+            {
+                return new ProjectFileAdditional("", removeReplaceItems);
+            }
+        }
+
 
         [OneTimeTearDown]
         public void TearDown()
@@ -30,7 +63,11 @@ Before
 After
 ";
 
-            Test(relativeReadme, expectedNuGetReadme,"","","readmedir/readme.md",addRelativeFile => addRelativeFile("images/image.png",""));
+            Test(
+                new RepoReadme(relativeReadme, "readmedir/readme.md"), 
+                GeneratedReadme.Simple(expectedNuGetReadme),
+                null,
+                addRelativeFile => addRelativeFile("images/image.png",""));
         }
 
         [Test]
@@ -47,7 +84,7 @@ After
                     ReadmeRemoveReplaceItemString.ReplacementTextElement(replacement)
                 ]);
 
-            var relativeReadme = @$"
+            var repoReadme = @$"
 Before
 {replace}
 This will be replaced
@@ -57,7 +94,7 @@ This will be replaced
 Before
 {replacement}";
 
-            Test(relativeReadme, expectedNuGetReadme, removeReplaceItems);
+            Test(new RepoReadme(repoReadme), GeneratedReadme.Simple(expectedNuGetReadme), ProjectFileAdditional.RemoveReplaceItemsOnly(removeReplaceItems));
 
         }
 
@@ -83,8 +120,7 @@ This will be replaced
 Before
 {replacement}";
 
-            Test(relativeReadme, expectedNuGetReadme, removeReplaceItems, "", "readme.md", addRelativeFile => addRelativeFile("relative.text", replacement));
-
+            Test(new RepoReadme(relativeReadme), GeneratedReadme.Simple(expectedNuGetReadme), ProjectFileAdditional.RemoveReplaceItemsOnly(removeReplaceItems), addRelativeFile => addRelativeFile("relative.text", replacement));
         }
 
         [Test]
@@ -95,10 +131,6 @@ Before
                 (repoRootRelativeImageUrl, commitId) => $"https://raw.githubusercontent.com/owner/repo/{commitId}{repoRootRelativeImageUrl}",
                 (repoRootRelativeImageUrl, commitId) => $"https://github.com/owner/repo/blob/{commitId}{repoRootRelativeImageUrl}");
         }
-
-        /*
-            "https://gitlab.com/user/repo.git", "main", "https://gitlab.com/user/repo/-/blob/main", "https://gitlab.com/user/repo/-/raw/main" }
-        */
 
         [Test]
         public void Should_Have_RepositoryCommit_When_PublishRepositoryUrl_GitLab()
@@ -139,45 +171,56 @@ Before
 ![image]({getExpectedAbsoluteImageUrl(relativeImageUrl,commitId)})
 
 [link]({getExpectedAbsoluteLinkUrl(relativeLinkUrl, commitId)})";
-            Test(repoReadme, expectedNuGetReadme,addRepositoryUrl:false, additionalProperties: additionalProperties, addRelativeFileCallback: addRelativeFile =>
-            {
-                addRelativeFile("images/image.png", "");
-                addRelativeFile("some/page.html", "");
+            Test(
+                new RepoReadme(repoReadme), 
+                GeneratedReadme.Simple(expectedNuGetReadme),
+                addRepositoryUrl:false, 
+                projectFileAdditional: ProjectFileAdditional.PropertiesOnly(additionalProperties), 
+                addRelativeFileCallback: addRelativeFile =>
+                {
+                    addRelativeFile("images/image.png", "");
+                    addRelativeFile("some/page.html", "");
 
-                addRelativeFile(".git/config", gitConfig);
-                addRelativeFile(".git/HEAD", headContent);
-                addRelativeFile($".git/{headBranchPath}", commitId);
-            });
+                    addRelativeFile(".git/config", gitConfig);
+                    addRelativeFile(".git/HEAD", headContent);
+                    addRelativeFile($".git/{headBranchPath}", commitId);
+                });
         }
 
+        [Test]
+        public void Should_Permit_Nested_Package_Path()
+        {
+            var repoReadme = new RepoReadme("untouched");
+            var generatedReadme = GeneratedReadme.PackagePath("untouched", "docs\\package-readme.md");
+            Test(repoReadme, generatedReadme);
+        }
 
         private void Test(
-            string repoReadme,
-            string expectedNuGetReadme,
-            string removeReplaceItems = "",
-            string additionalProperties = "",
-            string relativeBaseReadmePath = "readme.md",
+            RepoReadme repoReadme,
+            GeneratedReadme generatedReadme,
+            ProjectFileAdditional? projectFileAdditional = null,
             Action<Action<string, string>>? addRelativeFileCallback = null,
             bool addRepositoryUrl = true
             )
         {
-
-            var repositoryUrl = addRepositoryUrl ? "<RepositoryUrl>https://github.com/tonyhallett/arepo.git</RepositoryUrl>" : "";
+            projectFileAdditional = projectFileAdditional ?? ProjectFileAdditional.None;
+            var baseReadmeElementOrEmptyString = repoReadme.AddProjectElement ? $"<BaseReadme>{repoReadme.RelativePath}</BaseReadme>" : "";
+            var repositoryUrlElementOrEmptyString = addRepositoryUrl ? "<RepositoryUrl>https://github.com/tonyhallett/arepo.git</RepositoryUrl>" : "";
             DirectoryInfo ? projectDirectory = null;
             var projectWithReadMe = @$"<Project Sdk=""Microsoft.NET.Sdk"">
     <PropertyGroup>
         <TargetFramework>net461</TargetFramework>
         <Authors>TonyHUK</Authors>
-        {repositoryUrl}
-        <PackageReadmeFile>package-readme.md</PackageReadmeFile>
+        {repositoryUrlElementOrEmptyString}
+        <PackageReadmeFile>{generatedReadme.PackageReadMeFileElementContents}</PackageReadmeFile>
         <PackageProjectUrl>https://github.com/tonyhallett/arepo</PackageProjectUrl>
         <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-        <BaseReadme>{relativeBaseReadmePath}</BaseReadme>
+        {baseReadmeElementOrEmptyString}
         <IsPackable>True</IsPackable>
-{additionalProperties}
+{projectFileAdditional.Properties}
      </PropertyGroup>
      <ItemGroup>
-{removeReplaceItems}
+{projectFileAdditional.RemoveReplaceItems}
      </ItemGroup>
 </Project>
 ";
@@ -190,15 +233,22 @@ Before
                 {
                     projectDirectory = new DirectoryInfo(Path.GetDirectoryName(projectPath)!);
                     Action<string, string> createRelativeFile = (relativeFile, contents) => FileHelper.WriteAllTextEnsureDirectory(Path.Combine(projectDirectory.FullName, relativeFile), contents);
-                    createRelativeFile(relativeBaseReadmePath, repoReadme);
+                    if (repoReadme.AddReadme)
+                    {
+                        createRelativeFile(repoReadme.RelativePath, repoReadme.Readme);
+                    }
                     addRelativeFileCallback?.Invoke(createRelativeFile);
                 });
 
             if (projectDirectory == null) throw new Exception("Project directory not set");
 
-            var dependentNuGetReadMe = NupkgReadmeReader.Read(projectDirectory!, "package-readme.md");
+            var dependentNuGetReadMe = NupkgReadmeReader.Read(projectDirectory, generatedReadme.ZipEntryName);
 
-            Assert.That(dependentNuGetReadMe, Is.EqualTo(expectedNuGetReadme));
+            Assert.That(dependentNuGetReadMe, Is.EqualTo(generatedReadme.Expected));
+
+            var expectedGeneratedPath = Path.Combine(projectDirectory.FullName, generatedReadme.ExpectedGeneratedRelativePath);
+
+            Assert.That(File.Exists(expectedGeneratedPath), Is.True, $"Expected generated path {expectedGeneratedPath} to exist");
         }
     }
 }
