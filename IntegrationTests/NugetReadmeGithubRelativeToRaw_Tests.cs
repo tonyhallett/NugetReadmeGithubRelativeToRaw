@@ -9,11 +9,13 @@ namespace IntegrationTests
 
         private record RepoReadme(string Readme, string RelativePath = "readme.md", bool AddProjectElement = true, bool AddReadme = true);
 
+        private const string DefaultPackageReadmeFileElementContents = "package-readme.md";
+
         private record GeneratedReadme(
             string Expected,
-            string PackageReadMeFileElementContents = "package-readme.md",
+            string PackageReadMeFileElementContents = DefaultPackageReadmeFileElementContents,
             string ZipEntryName = "package-readme.md",
-            string ExpectedGeneratedRelativePath = "package-readme.md")
+            string ExpectedOutputPath = "obj\\Release\\net461\\ReadmeRewrite\\package-readme.md")
         { 
         
             public static GeneratedReadme Simple(string expected) => new GeneratedReadme(expected);
@@ -21,8 +23,8 @@ namespace IntegrationTests
             public static GeneratedReadme PackagePath(string expected, string packageReadMeFileElementContents)
                 => new GeneratedReadme(expected, packageReadMeFileElementContents, packageReadMeFileElementContents.Replace('\\', '/'));
 
-            public static GeneratedReadme OutputRelativePath(string expected, string expectedRelativeOutputPath)
-                => new GeneratedReadme(expected, ExpectedGeneratedRelativePath: expectedRelativeOutputPath);
+            public static GeneratedReadme OutputPath(string expected, string expectedOutputPath)
+                => new GeneratedReadme(expected, ExpectedOutputPath: expectedOutputPath);
         }
 
         private record ProjectFileAdditional(string Properties, string RemoveReplaceItems)
@@ -195,6 +197,44 @@ Before
             Test(repoReadme, generatedReadme);
         }
 
+        [Test]
+        public void Should_Generate_To_ReadmeRewrite_In_Obj()
+        {
+            Different_Output_Paths_Test(null, Path.Combine("obj", "Release", "net461", "ReadmeRewrite", DefaultPackageReadmeFileElementContents));
+        }
+
+        [Test]
+        public void Should_Generate_To_MSBuild_GeneratedReadmeDirectory_When_Absolute()
+        {
+            var tmpOutputDirectoryPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            try
+            {
+                Different_Output_Paths_Test(tmpOutputDirectoryPath, Path.Combine(tmpOutputDirectoryPath, DefaultPackageReadmeFileElementContents));
+            }
+            finally
+            {
+                if (File.Exists(tmpOutputDirectoryPath))
+                {
+                    File.Delete(tmpOutputDirectoryPath);
+                }
+            }
+        }
+
+        [Test]
+        public void Should_Generate_Relative_To_Project_Directory_When_GeneratedReadmeDirectory_Is_Relative()
+        {
+            var relativeProjectDir = "projectsubdir";
+            Different_Output_Paths_Test( relativeProjectDir, Path.Combine(relativeProjectDir, DefaultPackageReadmeFileElementContents));
+        }
+
+        private void Different_Output_Paths_Test(string? generatedReadmeDirectory, string expectedOutputPath)
+        {
+            var repoReadme = new RepoReadme("untouched");
+            var generatedReadme = GeneratedReadme.OutputPath("untouched", expectedOutputPath);
+            var projectFileAdditional = generatedReadmeDirectory == null ? null : ProjectFileAdditional.PropertiesOnly($"<GeneratedReadmeDirectory>{generatedReadmeDirectory}</GeneratedReadmeDirectory>");
+            Test(repoReadme, generatedReadme, projectFileAdditional);
+        }
+
         private void Test(
             RepoReadme repoReadme,
             GeneratedReadme generatedReadme,
@@ -246,9 +286,17 @@ Before
 
             Assert.That(dependentNuGetReadMe, Is.EqualTo(generatedReadme.Expected));
 
-            var expectedGeneratedPath = Path.Combine(projectDirectory.FullName, generatedReadme.ExpectedGeneratedRelativePath);
+            string expectedOutputPath;
+            if (Path.IsPathRooted(generatedReadme.ExpectedOutputPath))
+            {
+                expectedOutputPath = generatedReadme.ExpectedOutputPath;
+            }
+            else
+            {
+                expectedOutputPath = Path.Combine(projectDirectory.FullName, generatedReadme.ExpectedOutputPath);
+            }
 
-            Assert.That(File.Exists(expectedGeneratedPath), Is.True, $"Expected generated path {expectedGeneratedPath} to exist");
+            Assert.That(File.Exists(expectedOutputPath), Is.True, $"Expected generated path {expectedOutputPath} to exist");
         }
     }
 }

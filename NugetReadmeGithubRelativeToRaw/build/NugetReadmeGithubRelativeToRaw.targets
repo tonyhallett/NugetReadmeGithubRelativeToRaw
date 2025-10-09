@@ -19,15 +19,21 @@
         <!-- Require the caller to set PackageReadmeFile (relative to project directory) -->
         <Error Condition="'$(PackageReadmeFile)' == ''"
                Text="ReadmeRewrite: you must set &lt;PackageReadmeFile&gt; in the project (path RELATIVE to the project directory, e.g. README.nuget.md)." />
-
+       
         <PropertyGroup>
           <!-- Extract filename and package subdirectory from PackageReadmeFile -->
 	      <_ReadmeFilename>$([System.IO.Path]::GetFileName($(PackageReadmeFile)))</_ReadmeFilename>
           <_ReadmePackageDir>$([System.IO.Path]::GetDirectoryName($(PackageReadmeFile)))</_ReadmePackageDir>
 
-          <!-- Resolve output directory -->
-          <_ReadmeOutputDir Condition="'$(ReadmeOutputRelativeDirectory)' != ''">$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(ReadmeOutputRelativeDirectory)'))</_ReadmeOutputDir>
-          <_ReadmeOutputDir Condition="'$(ReadmeOutputRelativeDirectory)' == ''">$(MSBuildProjectDirectory)</_ReadmeOutputDir>
+          <!-- Default: IntermediateOutputPath\ReadmeRewrite -->
+          <_ReadmeOutputDir Condition="'$(GeneratedReadmeDirectory)' == '' and $([System.IO.Path]::IsPathRooted('$(IntermediateOutputPath)'))">$([System.IO.Path]::Combine('$(IntermediateOutputPath)', 'ReadmeRewrite'))</_ReadmeOutputDir>
+          <_ReadmeOutputDir Condition="'$(GeneratedReadmeDirectory)' == '' and ! $([System.IO.Path]::IsPathRooted('$(IntermediateOutputPath)'))">$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'ReadmeRewrite'))</_ReadmeOutputDir>
+
+          <!-- If custom path is absolute, use it as-is -->
+          <_ReadmeOutputDir Condition="'$(GeneratedReadmeDirectory)' != '' and $([System.IO.Path]::IsPathRooted('$(GeneratedReadmeDirectory)'))">$(GeneratedReadmeDirectory)</_ReadmeOutputDir>
+
+          <!-- If custom path is relative, combine with project directory -->
+          <_ReadmeOutputDir Condition="'$(GeneratedReadmeDirectory)' != '' and !$([System.IO.Path]::IsPathRooted('$(GeneratedReadmeDirectory)'))">$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(GeneratedReadmeDirectory)'))</_ReadmeOutputDir>
 
           <_OutputReadmeAbsolute>$([System.IO.Path]::Combine('$(_ReadmeOutputDir)', '$(_ReadmeFilename)'))</_OutputReadmeAbsolute>
         </PropertyGroup>
