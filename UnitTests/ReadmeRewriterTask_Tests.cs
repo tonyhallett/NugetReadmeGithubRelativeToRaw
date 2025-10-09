@@ -50,7 +50,7 @@ namespace UnitTests
 
             public string? WriteOutputReadme { get; private set; }
             public string? WriteRewrittenReadme { get; private set; }
-            public void WriteAllText(string outputReadme, string rewrittenReadme)
+            public void WriteAllTextEnsureDirectory(string outputReadme, string rewrittenReadme)
             {
                 WriteOutputReadme = outputReadme;
                 WriteRewrittenReadme = rewrittenReadme;

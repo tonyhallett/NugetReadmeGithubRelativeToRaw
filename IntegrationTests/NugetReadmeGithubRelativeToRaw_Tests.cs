@@ -156,7 +156,7 @@ Before
             string expectedNuGetReadme,
             string removeReplaceItems = "",
             string additionalProperties = "",
-            string relativeReadmePath = "readme.md",
+            string relativeBaseReadmePath = "readme.md",
             Action<Action<string, string>>? addRelativeFileCallback = null,
             bool addRepositoryUrl = true
             )
@@ -172,7 +172,7 @@ Before
         <PackageReadmeFile>package-readme.md</PackageReadmeFile>
         <PackageProjectUrl>https://github.com/tonyhallett/arepo</PackageProjectUrl>
         <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-        <BaseReadme>{relativeReadmePath}</BaseReadme>
+        <BaseReadme>{relativeBaseReadmePath}</BaseReadme>
         <IsPackable>True</IsPackable>
 {additionalProperties}
      </PropertyGroup>
@@ -190,7 +190,7 @@ Before
                 {
                     projectDirectory = new DirectoryInfo(Path.GetDirectoryName(projectPath)!);
                     Action<string, string> createRelativeFile = (relativeFile, contents) => FileHelper.WriteAllTextEnsureDirectory(Path.Combine(projectDirectory.FullName, relativeFile), contents);
-                    createRelativeFile(relativeReadmePath, repoReadme);
+                    createRelativeFile(relativeBaseReadmePath, repoReadme);
                     addRelativeFileCallback?.Invoke(createRelativeFile);
                 });
 

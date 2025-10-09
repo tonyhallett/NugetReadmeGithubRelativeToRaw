@@ -146,7 +146,7 @@ namespace NugetReadmeGithubRelativeToRaw
 
             if (!Log.HasLoggedErrors)
             {
-                IOHelper.WriteAllText(OutputReadme, readmeRewriterResult.RewrittenReadme!);
+                IOHelper.WriteAllTextEnsureDirectory(OutputReadme, readmeRewriterResult.RewrittenReadme!);
             }
         }
 

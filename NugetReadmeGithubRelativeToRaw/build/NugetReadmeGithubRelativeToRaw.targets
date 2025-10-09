@@ -21,7 +21,15 @@
                Text="ReadmeRewrite: you must set &lt;PackageReadmeFile&gt; in the project (path RELATIVE to the project directory, e.g. README.nuget.md)." />
 
         <PropertyGroup>
-          <_OutputReadmeAbsolute>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(PackageReadmeFile)'))</_OutputReadmeAbsolute>
+          <!-- Extract filename and package subdirectory from PackageReadmeFile -->
+	      <_ReadmeFilename>$([System.IO.Path]::GetFileName($(PackageReadmeFile)))</_ReadmeFilename>
+          <_ReadmePackageDir>$([System.IO.Path]::GetDirectoryName($(PackageReadmeFile)))</_ReadmePackageDir>
+
+          <!-- Resolve output directory -->
+          <_ReadmeOutputDir Condition="'$(ReadmeOutputRelativeDirectory)' != ''">$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(ReadmeOutputRelativeDirectory)'))</_ReadmeOutputDir>
+          <_ReadmeOutputDir Condition="'$(ReadmeOutputRelativeDirectory)' == ''">$(MSBuildProjectDirectory)</_ReadmeOutputDir>
+
+          <_OutputReadmeAbsolute>$([System.IO.Path]::Combine('$(_ReadmeOutputDir)', '$(_ReadmeFilename)'))</_OutputReadmeAbsolute>
         </PropertyGroup>
 
         <!-- Run the rewrite task -->
@@ -42,7 +50,7 @@
             />
 
         <ItemGroup>
-            <None Include="$(PackageReadmeFile)" Pack="true" PackagePath=""/>
+            <None Include="$(_OutputReadmeAbsolute)" Pack="true" PackagePath="$(_ReadmePackageDir)"/>
         </ItemGroup>
   </Target>
 </Project>
