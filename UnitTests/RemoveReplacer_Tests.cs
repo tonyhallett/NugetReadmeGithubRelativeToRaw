@@ -69,8 +69,6 @@ This too is visible
             Assert.That(rewrittenReadMe, Is.EqualTo(expectedReadMeContent));
         }
 
-
-
         [Test]
         public void Should_Remove_With_Regex()
         {

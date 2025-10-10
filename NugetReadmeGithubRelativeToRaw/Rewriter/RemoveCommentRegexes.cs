@@ -10,7 +10,9 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
             EndRegex = endRegex;
         }
         public Regex StartRegex { get; }
+
         public Regex EndRegex { get; }
+        
         public static RemoveCommentRegexes Create(RemoveCommentIdentifiers removeCommentIdentifiers)
         {
             return new RemoveCommentRegexes(

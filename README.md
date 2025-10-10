@@ -18,21 +18,22 @@ An [MsBuild custom target](https://learn.microsoft.com/en-us/nuget/concepts/msbu
 
 # MSBuild Properties
 
-| Property                 | Default   | Required                     | Nuget Property | Description                                                       |
-| --------------------     |---------  |----------------------------- | ---------------|-----------------------------------------------                    |
-| BaseReadme               | README.md | No                           |                | The readme relative path to transform                             |
-| PackageReadmeFile        |           | Yes.                         |                | The output readme relative path. NuGet property                   |
-|                          |           |                              |                |                                                                   |
-|                          |           |                              |                | A GitHub or GitLab repository url ( .git ) - order of precedence  |
-| ReadmeRepositoryUrl      |           | Not if RepositoryUrl         |                |                                                                   |
-| RepositoryUrl            |           | Not if ReadmeRepositoryUrl   |      Yes       |                                                                   |
-|                          |           |                              |                                                                                    |
-|                          |           |                              |                | The ref part of the generated absolute url in order of precedence |
-| RepositoryRef            | master    | No.                          |                |                                                                   |
-| RepositoryCommit         | master    | No.                          |      Yes       |                                                                   |
-| RepositoryBranch         | master    | No.                          |      Yes       |                                                                   |
-|                          |           |                              |                |                                                                   |
-| RemoveCommentIdentifiers |           | No.                          | The format is - *startidentifier*;*endidentifier*                                  |
+| Property                 | Default   | Required                     | Nuget Property | Description                                                                   |
+| --------------------     |---------  |----------------------------- | ---------------|-----------------------------------------------                                |
+| BaseReadme               | README.md | No                           |                | The readme relative path to transform                                         |
+| PackageReadmeFile        |           | Yes.                         |      Yes       | Used for the PackagePath, file name used for the output file                  |
+| GeneratedReadmeDirectory |           | No                           |                | Defaults to ReadmeRewrite in obj. If relative will be relative to the project |
+|                          |           |                              |                |                                                                               |
+|                          |           |                              |                | A GitHub or GitLab repository url ( .git ) - order of precedence              |
+| ReadmeRepositoryUrl      |           | Not if RepositoryUrl         |                |                                                                               |
+| RepositoryUrl            |           | Not if ReadmeRepositoryUrl   |      Yes       |                                                                               |
+|                          |           |                              |                |                                                                               |
+|                          |           |                              |                | The ref part of the generated absolute url in order of precedence             |
+| RepositoryRef            | master    | No.                          |                |                                                                               |
+| RepositoryCommit         | master    | No.                          |      Yes       |                                                                               |
+| RepositoryBranch         | master    | No.                          |      Yes       |                                                                               |
+|                          |           |                              |                |                                                                               |
+| RemoveCommentIdentifiers |           | No.                          |                | The format is - *startidentifier*;*endidentifier*                             |
 
 Of the ref MSBuild properties, RepositoryCommit is probably what you should be used.
 Note that with SDK style projects the RepositoryUrl, RepositoryCommit and RepositoryBranch properties are automatically populated from the .git directory 

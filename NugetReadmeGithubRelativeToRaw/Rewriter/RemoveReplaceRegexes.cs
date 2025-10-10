@@ -8,7 +8,7 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
         private readonly RemoveCommentRegexes? _removeCommentRegexes;
         private readonly List<RegexRemovalOrReplacement> regexRemovalOrReplacements;
         private bool matchedRemoveCommentRegexes = false;
-        private RegexRemovalOrReplacement? matchedregexRemovalOrReplacement;
+        private RegexRemovalOrReplacement? matchedRegexRemovalOrReplacement;
 
 
         public RemoveReplaceRegexes(
@@ -39,14 +39,15 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
                 match = regexRemovalOrReplacement.StartRegex.Match(text);
                 if (match.Success)
                 {
-                    if(regexRemovalOrReplacement.EndRegex != null)
+                    if (regexRemovalOrReplacement.EndRegex != null)
                     {
-                        matchedregexRemovalOrReplacement = regexRemovalOrReplacement;
+                        matchedRegexRemovalOrReplacement = regexRemovalOrReplacement;
                     }
 
                     return new MatchStartResult(match, regexRemovalOrReplacement.EndRegex == null, regexRemovalOrReplacement.ReplacementText);
                 }
             }
+
             return new MatchStartResult(match);
         }
 
@@ -62,12 +63,14 @@ namespace NugetReadmeGithubRelativeToRaw.Rewriter
                 }
                 return match;
             }
-            match = matchedregexRemovalOrReplacement!.EndRegex!.Match(text);
+
+            match = matchedRegexRemovalOrReplacement!.EndRegex!.Match(text);
             if (match.Success)
             {
-                matchedregexRemovalOrReplacement = null;
-                regexRemovalOrReplacements.Remove(matchedregexRemovalOrReplacement!);
+                matchedRegexRemovalOrReplacement = null;
+                //regexRemovalOrReplacements.Remove(matchedRegexRemovalOrReplacement!);
             }
+
             return match;
         }
     }

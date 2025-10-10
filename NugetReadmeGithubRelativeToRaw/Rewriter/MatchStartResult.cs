@@ -11,6 +11,7 @@
         public System.Text.RegularExpressions.Match Match { get; }
 
         public bool IsRemaining { get; }
+
         public string? ReplacementText { get; }
     }
 }
