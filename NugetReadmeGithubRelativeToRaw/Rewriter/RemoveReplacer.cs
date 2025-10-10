@@ -62,7 +62,10 @@
                         var afterEnd = endMatchInSameLine.After(afterStart);
                         var merged = before + replacementText + afterEnd;
                         // Add merged only if not empty (this preserves inline non-comment snippets)
-                        lineBuilder.AppendLine(merged, isLast);
+                        if (!string.IsNullOrWhiteSpace(merged))
+                        {
+                            lineBuilder.AppendLine(merged, isLast);
+                        }
                     }
                     else
                     {

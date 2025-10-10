@@ -222,5 +222,36 @@ Replaced";
 
             Assert.That(rewrittenReadMe, Is.EqualTo(expectedReadMeContent));
         }
+
+        [Test]
+        public void Could_Replace_Detail_Summary()
+        {
+            var readMeContent = @"
+This is visible
+
+<details>
+<summary>Summary</summary>
+This is retained
+</details>
+
+This is also visible
+";
+
+            var detailsStartRemoval = new RemovalOrReplacement(CommentOrRegex.Regex, "<details", ">", null);
+            var detailsEndRemoval = new RemovalOrReplacement(CommentOrRegex.Regex, "</details", ">", null);
+            var summaryRemoval = new RemovalOrReplacement(CommentOrRegex.Regex, "^<summary>.*?</", "summary>", null);
+            var removeReplaceSettings = new RemoveReplaceSettings(null, [detailsStartRemoval, detailsEndRemoval, summaryRemoval]);
+            var rewrittenReadMe = _removeReplacer.RemoveReplace(readMeContent, removeReplaceSettings)!;
+
+            var expectedReadMeContent = @"
+This is visible
+
+This is retained
+
+This is also visible
+";
+
+            Assert.That(rewrittenReadMe, Is.EqualTo(expectedReadMeContent));
+        }
     }
 }
